@@ -39,13 +39,13 @@ def run_program(params, shared):
     print_progress(shared)
 
 parameters_to_test = {
-    'hidden_layers': [[1000, 800, 200, 100], [400, 200, 50], [50, 10, 5], [100, 20]],
+    'hidden_layers': [ [50, 10], [100, 20], [30, 5]],
     'ligand': ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN'],
     'learning_rate': [0.01, 0.001],
-    'epochs': [50],
+    'epochs': [20],
     'batch_size': [1000],
     'epoch_stats_interval': [10],
-    'embedder': ['ESM', 'T5']
+    'embedder': ['ESM', 'T5', 'BERT']
 }
 
 param_combinations = [
