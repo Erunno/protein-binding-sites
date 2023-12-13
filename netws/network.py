@@ -5,6 +5,8 @@ results_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\ne
 
 import json
 import os
+import random
+import string
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -27,14 +29,21 @@ stats_interval = args.epoch_stats_interval
 verbose = args.verbose
 embedder = args.embedder
 
-result_file_name = f'{ligand}_hl{"-".join([str(n) for n in hidden_layers])}.{datetime.now().strftime("%d-%m-%y-%Hh%Mm%Ss.%f")}.json'
+def generate_random_string(length):
+    letters = string.ascii_letters + string.digits  # You can include other characters as needed
+    return ''.join(random.choice(letters) for _ in range(length))
+
+random_suffix = generate_random_string(5)
+
+result_file_name = f'{ligand}_hl{"-".join([str(n) for n in hidden_layers])}.{datetime.now().strftime("%d-%m-%y-%Hh%Mm%Ss.%f")}.{random_suffix}.json'
 
 seed_all(seed)
 
 data_loader = dl.DataLoader(
     binding_sights_db_fname=binding_sights_db_filename,
     dataset_by_ligands_db_fname=dataset_db_filename,
-    embeddings_folder=os.path.join(embeddings_top_folder,embedder)
+    embeddings_folder=os.path.join(embeddings_top_folder,embedder),
+    verbose=verbose
 )
 
 X_train, y_train, X_test, y_test = data_loader.get_data_set_for(ligand)

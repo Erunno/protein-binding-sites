@@ -10,7 +10,7 @@ output_dir="$2"
 
 BASE_URL="http://proteinspector.projekty.ms.mff.cuni.cz:42013"
 
-EMBEDDER="bert" # T5, ESM and BERT possible
+EMBEDDER="t5" # T5, ESM and BERT possible
 
 if [ ! -d "$output_dir" ]; then
     mkdir -p "$output_dir"

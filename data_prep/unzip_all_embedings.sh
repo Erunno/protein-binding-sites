@@ -14,6 +14,7 @@ mkdir -p "$target_folder"
 
 # Unzip all .zip files in the input folder
 for file in "$input_folder"/*.zip; do
+    echo unzip file $file
     unzip -o -d "$target_folder" "$file" | awk -v target="$target_folder" '
         BEGIN {
             FS=OFS=":"
