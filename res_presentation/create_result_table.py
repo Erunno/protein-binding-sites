@@ -3,21 +3,26 @@ import os
 import table_printer as printer
 import argparse
 
-results_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\netw_results'  
 
 ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
-embedders = ['BERT', 'ESM', 'T5'] 
+embedders = [] # to be defined later in the script 
 
 parser = argparse.ArgumentParser(description='Description of your script')
 parser.add_argument('--tag', nargs='+', help='List of tags')
+parser.add_argument('--results-folder', help='Folder with results')
 args = parser.parse_args()
 
-tags = ['basic']
+tags = []
+
+if args.results_folder:
+    results_folder = args.results_folder  
+else:
+    print("Err: no '--results-folder' option defined")
 
 if args.tag:
     tags = args.tag
 else:
-    print("No tags provided. Defaulted to tag 'basic'.")
+    print("WARNING: No tags provided (using --tag <tag1> <tag2> ...). Taking all results into consideration...")
 
 def load_results_objects_from(folder):
     global tags
@@ -32,7 +37,13 @@ def load_results_objects_from(folder):
                 result['file_name'] = filename
                 results.append(result)
 
+    if (len(tags) == 0): 
+        return results
+    
     return [res for res in results if res['result_tag'] in tags]
+
+def get_all_embedders(results):
+    return list(dict.fromkeys([res['embedder'] for res in results]))
 
 def get_the_highest_mcc_stat_within_the_result(result):
     return max(result['all_stats'], key=lambda x: x['mcc'])
@@ -54,6 +65,7 @@ def get_best_result_for_embedder(results, embedder):
             'fname': '---', 
             'layers': '---',
             'epoch': '---',
+            'learning_rate': '---',
             'tag': '---'
         }
 
@@ -101,8 +113,10 @@ def get_line_for_ligand(results, ligand):
 
 
 results = load_results_objects_from(results_folder)
+embedders = get_all_embedders(results)
 
 table = [ get_line_for_ligand(results, ligand) for ligand in ligands ]
 header = ['ligand', 'embedder', 'mcc', 'tag', 'layers', 'epoch', 'learning rate', 'file name']
+
 
 printer.print_table([header] + table)
