@@ -1,14 +1,29 @@
 import json
 import os
 import table_printer as printer
+import argparse
 
 results_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\netw_results'  
 
 ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
 embedders = ['BERT', 'ESM', 'T5'] 
 
+parser = argparse.ArgumentParser(description='Description of your script')
+parser.add_argument('--tag', nargs='+', help='List of tags')
+args = parser.parse_args()
+
+tags = ['basic']
+
+if args.tag:
+    tags = args.tag
+else:
+    print("No tags provided. Defaulted to tag 'basic'.")
+
 def load_results_objects_from(folder):
+    global tags
+
     results = []
+
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
         if filename.endswith('.json'):
@@ -17,7 +32,7 @@ def load_results_objects_from(folder):
                 result['file_name'] = filename
                 results.append(result)
 
-    return results
+    return [res for res in results if res['result_tag'] in tags]
 
 def get_the_highest_mcc_stat_within_the_result(result):
     return max(result['all_stats'], key=lambda x: x['mcc'])
@@ -38,7 +53,8 @@ def get_best_result_for_embedder(results, embedder):
             'mcc': '---', 
             'fname': '---', 
             'layers': '---',
-            'epoch': '---'
+            'epoch': '---',
+            'tag': '---'
         }
 
     # here more info about the best run can be extracted
@@ -49,6 +65,7 @@ def get_best_result_for_embedder(results, embedder):
     layers = '-'.join([str(layer) for layer in best_run['hidden_layers']])
     epoch = str(best_stat['epochs'])
     learning_rate = str(best_run['learning_rate'])
+    tag = best_run['result_tag']
 
     return {
         'mcc': best_mcc_string, 
@@ -56,6 +73,7 @@ def get_best_result_for_embedder(results, embedder):
         'layers': layers,
         'epoch': epoch,
         'learning_rate': learning_rate,
+        'tag': tag,
     }
 
 def get_line_for_ligand(results, ligand):
@@ -69,6 +87,7 @@ def get_line_for_ligand(results, ligand):
         embedders, 
         
         [res['mcc'] for res in results], 
+        [res['tag'] for res in results], 
         [res['layers'] for res in results], 
         [res['epoch'] for res in results],
         [res['learning_rate'] for res in results],
@@ -84,6 +103,6 @@ def get_line_for_ligand(results, ligand):
 results = load_results_objects_from(results_folder)
 
 table = [ get_line_for_ligand(results, ligand) for ligand in ligands ]
-header = ['ligand', 'embedder', 'mcc', 'layers', 'epoch', 'learning rate', 'file name']
+header = ['ligand', 'embedder', 'mcc', 'tag', 'layers', 'epoch', 'learning rate', 'file name']
 
 printer.print_table([header] + table)
