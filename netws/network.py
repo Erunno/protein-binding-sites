@@ -7,6 +7,7 @@ import json
 import os
 import random
 import string
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,6 +29,7 @@ hidden_layers = args.hidden_layers
 stats_interval = args.epoch_stats_interval
 verbose = args.verbose
 embedder = args.embedder
+tag = args.tag
 
 def generate_random_string(length):
     letters = string.ascii_letters + string.digits  # You can include other characters as needed
@@ -47,6 +49,9 @@ data_loader = dl.DataLoader(
 )
 
 X_train, y_train, X_test, y_test = data_loader.get_data_set_for(ligand)
+
+X_train = np.c_[ X_train, y_train ] 
+X_test = np.c_[ X_test, y_test ] 
 
 X_train = torch.tensor(X_train, dtype=torch.float32)
 y_train = torch.tensor(y_train, dtype=torch.float32)
@@ -101,6 +106,7 @@ training_report = {
     'ligand': ligand,
     'embedder': embedder,
     'model_to_string': str(model),
+    'result_tag': tag,
     'batch_size': batch_size,
     'total_epochs': n_epochs,
     'seed': seed,
