@@ -19,6 +19,8 @@ from datetime import datetime
 
 args = ArgumentParser.get_args()
 
+tag = args.tag 
+
 ligand = args.ligand
 batch_size = args.batch_size
 n_epochs = args.epochs
@@ -28,6 +30,12 @@ hidden_layers = args.hidden_layers
 stats_interval = args.epoch_stats_interval
 verbose = args.verbose
 embedder = args.embedder
+
+protrusion_data_fname = args.protrusion_data_file
+pdb_mappings_fname = args.pdb_mappings_fname
+protrusion_radii = args.used_protrusion_radii
+
+protrusion_used = protrusion_data_fname is not None  
 
 def generate_random_string(length):
     letters = string.ascii_letters + string.digits  # You can include other characters as needed
@@ -39,12 +47,24 @@ result_file_name = f'{ligand}_hl{"-".join([str(n) for n in hidden_layers])}.{dat
 
 seed_all(seed)
 
-data_loader = dl.DataLoader(
-    binding_sights_db_fname=binding_sights_db_filename,
-    dataset_by_ligands_db_fname=dataset_db_filename,
-    embeddings_folder=os.path.join(embeddings_top_folder,embedder),
-    verbose=verbose
-)
+data_loader = None 
+if protrusion_used:
+    data_loader = dl.ProtrusionDataLoader(
+        binding_sights_db_fname=binding_sights_db_filename,
+        dataset_by_ligands_db_fname=dataset_db_filename,
+        embeddings_folder=os.path.join(embeddings_top_folder,embedder),
+        protrusion_data_fname=protrusion_data_fname,
+        pdb_mappings_fname=pdb_mappings_fname,
+        radii=protrusion_radii,
+        verbose=verbose
+    )
+else:
+    data_loader = dl.DataLoader(
+        binding_sights_db_fname=binding_sights_db_filename,
+        dataset_by_ligands_db_fname=dataset_db_filename,
+        embeddings_folder=os.path.join(embeddings_top_folder,embedder),
+        verbose=verbose
+    )
 
 X_train, y_train, X_test, y_test = data_loader.get_data_set_for(ligand)
 
@@ -98,6 +118,7 @@ final_stats = get_statistics(model, X_test, y_test, n_epochs, print_res=verbose)
 all_stats.append(final_stats)
 
 training_report = {
+    'result_tag': tag,
     'ligand': ligand,
     'embedder': embedder,
     'model_to_string': str(model),
@@ -107,8 +128,11 @@ training_report = {
     'learning_rate': learning_rate,
     'hidden_layers': hidden_layers,
     'all_stats': all_stats,
-    'final_stats': final_stats  
+    'final_stats': final_stats
 }
+
+if protrusion_used:
+    training_report['protrusion_radii'] = data_loader.radii
 
 result_path = os.path.join(results_folder, result_file_name)
 

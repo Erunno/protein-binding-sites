@@ -7,8 +7,6 @@ from pathlib import Path
 import numpy as np
 import pprint
 
-file_path = r"C:\Users\mbrabec\Desktop\MFF\diplomka\data\biolip_structures\receptor\1a0bA.pdb"
-
 parser = argparse.ArgumentParser(description='Process input and output directories')
 parser.add_argument('--output-file', help='Specify the output file', required=False)
 parser.add_argument('--input-dir', help='Specify the input directory', required=True)

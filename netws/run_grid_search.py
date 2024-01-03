@@ -23,6 +23,7 @@ def run_program(params, shared):
     command = [
         'python',
         './network.py',
+        '--tag', 'testing_tag',
         '--hidden-layers', *map(str, params['hidden_layers']),
         '--seed', str(seed),
         '--ligand', params['ligand'],
@@ -45,7 +46,7 @@ parameters_to_test = {
     'epochs': [20],
     'batch_size': [1000],
     'epoch_stats_interval': [10],
-    'embedder': ['ESM', 'T5', 'BERT']
+    'embedder': ['ESM', 'T5', 'BERT'],
 }
 
 param_combinations = [

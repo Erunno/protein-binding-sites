@@ -7,6 +7,7 @@ class DataLoader:
 
     def __init__(self, binding_sights_db_fname, dataset_by_ligands_db_fname, embeddings_folder, verbose=False):
         self.embeddings_folder = embeddings_folder
+        self.verbose = verbose
 
         with open(binding_sights_db_fname, 'r') as json_file:
             self.binding_sights_db = json.load(json_file)
@@ -90,3 +91,100 @@ class DataLoader:
             dataset_type: [protein for protein in dataset[dataset_type] if protein not in not_found]
             for dataset_type in ['train', 'test']
         }
+
+class ProtrusionDataLoader(DataLoader):
+    def __init__(self, 
+        binding_sights_db_fname, 
+        dataset_by_ligands_db_fname, 
+        embeddings_folder,
+        protrusion_data_fname,
+        pdb_mappings_fname,
+        radii = None, 
+        verbose=False
+    ):
+
+        with open(protrusion_data_fname, 'r') as file:
+            self.protrusion_data = json.load(file)
+
+        with open(pdb_mappings_fname, 'r') as file:
+            self.pdb_mappings_data = json.load(file)
+        
+        self._assert_radii_valid(radii)
+        self.radii = self._normalize_radii(radii)
+
+        super().__init__(binding_sights_db_fname, dataset_by_ligands_db_fname, embeddings_folder, verbose) 
+
+
+    def _assert_and_filter_not_found_proteins(self, all_datasets, ligand):
+        proteins = super()._assert_and_filter_not_found_proteins(all_datasets, ligand)
+
+        mappings = self.pdb_mappings_data['mappings']
+        invalid_proteins = self.pdb_mappings_data['missing'] \
+            + [k for k in mappings if mappings[k]['distance'] != 0]
+        
+        result = {
+            dataset_type: [protein for protein in proteins[dataset_type] if protein not in invalid_proteins]
+            for dataset_type in ['train', 'test']
+        }
+
+        if self.verbose:
+            excluded = {
+                dataset_type: len(proteins[dataset_type]) - len(result[dataset_type])
+                for dataset_type in ['train', 'test']
+            }
+
+            print(f"info: protrusion filter: For ligand '{ligand}' excluded {excluded['test']} testing, {excluded['train']} training proteins")
+            print(f"    {len(result['test'])} testing, {len(result['train'])} training proteins left\n")
+
+        return result
+    
+    def _assert_radii_valid(self, radii):
+        all_radii = self._get_all_possible_radii()
+
+        not_found = [ r for r in all_radii if r not in all_radii ]
+
+        if len(not_found) != 0:
+            raise Exception(f'Following radii are not present in protrusion file: {",".join(not_found)}')
+
+    def _normalize_radii(self, radii):
+        if radii is None:
+            return self._get_all_possible_radii()
+        
+        return radii
+
+    def _get_all_possible_radii(self):
+        def get_radii_from(protrusion_record):
+            return [neighbors_data['radius'] for neighbors_data in protrusion_record]
+
+        all_radii = None
+
+        for prot in self.protrusion_data:
+            first_iteration = all_radii is None 
+
+            record = self.protrusion_data[prot]
+
+            if first_iteration:
+                all_radii = get_radii_from(record)
+                continue
+
+            records_radii = get_radii_from(record)
+
+            all_radii = [r for r in all_radii if r in records_radii]
+
+        return all_radii
+
+    def load_protein_embeddings(self, protein_id: str):
+        embedding = super().load_protein_embeddings(protein_id)
+
+        chain_id = self.pdb_mappings_data['mappings'][protein_id]['chain_id']
+    
+        protrusion_records = self.protrusion_data[protein_id + chain_id]
+        protrusions = self._get_protrusion_from(protrusion_records, self.radii)
+
+        embedding_plus_protrusion = np.hstack((embedding, protrusions))
+
+        return embedding_plus_protrusion
+    
+    def _get_protrusion_from(self, protrusion_records, used_radii):
+        relevant_neighbors = np.array([r['neighbors'] for r in protrusion_records if r['radius'] in used_radii])
+        return relevant_neighbors.T
