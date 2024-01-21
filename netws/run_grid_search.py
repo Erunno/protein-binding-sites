@@ -23,7 +23,7 @@ def run_program(params, shared):
     command = [
         'python',
         './network.py',
-        '--tag', 'testing_tag',
+        '--tag', 'protrusion_v1',
         '--hidden-layers', *map(str, params['hidden_layers']),
         '--seed', str(seed),
         '--ligand', params['ligand'],
@@ -31,7 +31,9 @@ def run_program(params, shared):
         '--epochs', str(params['epochs']),
         '--batch-size', str(params['batch_size']),
         '--embedder', str(params['embedder']),
-        '--epoch-stats-interval', str(params['epoch_stats_interval'])
+        '--epoch-stats-interval', str(params['epoch_stats_interval']),
+        '--protrusion-data-file', r'..\data\3d_proc\protrusions.big.json',
+        '--pdb-mappings-fname', r'..\data\3d_proc\mappings_to_pdbs.json',
     ]
     
     subprocess.run(command)
@@ -40,13 +42,15 @@ def run_program(params, shared):
     print_progress(shared)
 
 parameters_to_test = {
-    'hidden_layers': [ [50, 10], [100, 20], [30, 5]],
-    'ligand': ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN'],
+    'hidden_layers': [ [900, 500, 100, 30], [100, 50, 20], [400, 200, 50]],
+    #'ligand': ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN'],
+    'ligand': ['GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN', 'AMP'], # just some of the ligands
     'learning_rate': [0.01, 0.001],
     'epochs': [20],
     'batch_size': [1000],
     'epoch_stats_interval': [10],
-    'embedder': ['ESM', 'T5', 'BERT'],
+    'embedder': ['BERT'],
+    # 'embedder': ['ESM', 'T5', 'BERT'],
 }
 
 param_combinations = [
