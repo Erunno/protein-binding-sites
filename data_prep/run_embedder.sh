@@ -1,16 +1,16 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 input_directory output_directory"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <esm|t5|bert] <input_directory> <output_directory>"
     exit 1
 fi
 
-input_dir="$1"
-output_dir="$2"
+EMBEDDER="$1" # T5, ESM and BERT possible
+input_dir="$2"
+output_dir="$3"
 
 BASE_URL="http://proteinspector.projekty.ms.mff.cuni.cz:42013"
 
-EMBEDDER="t5" # T5, ESM and BERT possible
 
 if [ ! -d "$output_dir" ]; then
     mkdir -p "$output_dir"

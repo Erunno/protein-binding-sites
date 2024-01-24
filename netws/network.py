@@ -1,10 +1,9 @@
-binding_sights_db_filename = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\binding_sights\binding_sights_by_ligand.json'
-dataset_db_filename = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\yu_datasets\proteins_by_datasets.json'
-embeddings_top_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\embedded_sequences'
-results_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\netw_results'
 
-import json
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
+import json
 import random
 import string
 import torch
@@ -16,6 +15,11 @@ import arguments_parser as ArgumentParser
 from seed_network import seed_all 
 from evaluator import get_statistics
 from datetime import datetime
+
+binding_sights_db_filename = config.binding_sights_file
+dataset_db_filename = config.proteins_by_datasets_file
+embeddings_top_folder = config.embeddings_folder
+results_folder = config.networks_results_folder
 
 args = ArgumentParser.get_args()
 

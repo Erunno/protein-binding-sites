@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 import re
 import json
 
@@ -11,8 +14,8 @@ import json
 #  |   - <one testing set - ligand prefixed (eg. AMP_Testing.txt)>
 #  |   - ...
 
-yu_ds_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\data\yu_sequences'
-datasets_output_file = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\yu_datasets\proteins_by_datasets.json'
+yu_ds_folder = config.yu_sequences_folder
+datasets_output_file = config.proteins_by_datasets_file
 
 ##### format parameters #####
 

@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 import re
 import json
 
@@ -11,8 +14,8 @@ import json
 #  |   - <one testing set - ligand prefixed (eg. AMP_Testing.txt)>
 #  |   - ...
 
-yu_ds_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\data\yu_sequences'
-biding_sights_output_file = r'C:\Users\mbrabec\Desktop\MFF\diplomka\neural_netw_emb\data\binding_sights\binding_sights_by_ligand.json'
+yu_ds_folder = config.yu_sequences_folder
+biding_sights_output_file = config.binding_sights_file
 
 ##### format parameters #####
 

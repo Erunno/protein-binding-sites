@@ -1,7 +1,10 @@
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 
-yu_ds_folder = r'C:\Users\mbrabec\Desktop\MFF\diplomka\data\yu_sequences'
-out_folder = r'.\data\all_proteins_of_YU'
+yu_ds_folder = config.yu_sequences_folder
+out_folder = config.yu_as_fasta_files_folder
 
 proteins_in_one_fasta_file_count = 500
 
