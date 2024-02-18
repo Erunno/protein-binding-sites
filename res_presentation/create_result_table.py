@@ -5,7 +5,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Description of your script')
 parser.add_argument('--tag', nargs='+', help='List of tags')
-parser.add_argument('--embedder-aliases', nargs='+', help='List of embedders aliases e.g. ProtT5->T5')
+parser.add_argument('--embedder-aliases', nargs='+', help='List of embedders aliases e.g. ProtT5:-T5')
 parser.add_argument('--results-folder', help='Folder with results')
 parser.add_argument('--compare', action='store_true', help='Compare results based on tags.')
 
@@ -13,8 +13,7 @@ args = parser.parse_args()
 
 compare_results = True if args.compare else False
 display_result_table = not compare_results
-
-embedder_aliases = [ alias.split('->') for alias in (args.embedder_aliases if args.embedder_aliases else []) ]
+embedder_aliases = [ alias.split(':-') for alias in (args.embedder_aliases if args.embedder_aliases else []) ]
 embedder_aliases = { alias[0]: alias[1] for alias in embedder_aliases }
 
 if args.results_folder:
