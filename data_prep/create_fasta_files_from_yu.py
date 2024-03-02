@@ -2,41 +2,13 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
+import datasets_db
+
 
 yu_ds_folder = config.yu_sequences_folder
 out_folder = config.yu_as_fasta_files_folder
 
 proteins_in_one_fasta_file_count = 500
-
-protein_id_column_idx = 0
-protein_sequence_idx = 5
-column_separator = ';'
-
-def get_sequences_from_file(fname): 
-    with open(fname, 'r') as file:
-        protein_records = [
-            line_record.split(column_separator)
-            for line_record in file.read().replace('\r', '').split('\n')
-            if line_record != ''
-        ]
-
-    return { record[protein_id_column_idx].lower(): record[protein_sequence_idx] for record in protein_records }
-
-def get_all_files_paths_of_yu(yu_ds_folder):
-    return [
-        os.path.join(root, file_name)
-        for root, _, files in os.walk(yu_ds_folder)
-        for file_name in files
-        if file_name.endswith('.txt')
-    ]
-
-def get_fasta_records_from_sequences(sequences):
-    return [
-        f'''>{id}
-{sequences[id]}
-'''
-        for id in sequences
-    ]
 
 def write_to_fasta_file(fname, fasta_records):
     with open(fname, 'w') as f:
@@ -52,14 +24,10 @@ def split_list(list, items_per_list):
         for chunk_idx in range(chunk_count)
     ]
 
-yu_file_paths = get_all_files_paths_of_yu(yu_ds_folder)
+db = datasets_db.SeqDatasetDb()
+all_chain_records = db.get_all_chain_records()
 
-all_sequences = {}
-for yu_file_path in yu_file_paths:
-    sequences_from_one_file = get_sequences_from_file(yu_file_path)
-    all_sequences.update(sequences_from_one_file)
-
-fasta_records = get_fasta_records_from_sequences(all_sequences)
+fasta_records = [chain.to_fasta_record() for chain in all_chain_records]
 
 fasta_recs_splitted = split_list(fasta_records, proteins_in_one_fasta_file_count)
 

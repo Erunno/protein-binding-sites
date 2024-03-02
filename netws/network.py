@@ -17,6 +17,7 @@ import arguments_parser as ArgumentParser
 from seed_network import seed_all 
 from evaluator import get_statistics
 from datetime import datetime
+from estimators.basic import BasicNetwork
 
 binding_sights_db_filename = config.binding_sights_file
 dataset_db_filename = config.proteins_by_datasets_file
@@ -92,7 +93,6 @@ y_train = torch.tensor(y_train, dtype=torch.float32)
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_test = torch.tensor(y_test, dtype=torch.float32)
  
-
 if (verbose):
     print("defining model ...", flush=True)
 
@@ -101,53 +101,46 @@ input_size = len(X_train[0])
 output_size = 1
 
 if (use_simple_model):
-    model = ModelBuilder.create_simple_model(
+    model = BasicNetwork(
         input_size=input_size,
-        output_size=output_size,
-        hidden_sizes=hidden_layers
+        epochs=n_epochs,
+        batch_size=batch_size,
+        hidden_sizes=hidden_layers,
+        learning_rate=learning_rate
     )
 else:
-    model = ModelBuilder.create_model(
-        input_size=input_size,
-        output_size=output_size,
-        hidden_sizes=hidden_layers,
-        bypassed_last_inputs_count=radii_count
-    )
+    raise "not impl yet"
+    # model = ModelBuilder.create_model(
+    #     input_size=input_size,
+    #     output_size=output_size,
+    #     hidden_sizes=hidden_layers,
+    #     bypassed_last_inputs_count=radii_count
+    # )
 
-if (verbose):
-    print(str(model))
+# if (verbose):
+#     print(str(model))
  
 # train the model
-loss_fn   = nn.BCELoss()  # binary cross entropy
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
 all_stats = []
 
-
-if (verbose):
-    print("running training ...", flush=True)
-
-for epoch in range(n_epochs):
-    for i in range(0, len(X_train), batch_size):
-        X_batch = X_train[i:i+batch_size]
-        
-        y_pred = model(X_batch)[:, 0]
-        y_batch = y_train[i:i+batch_size]
-        
-        loss = loss_fn(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
+def epoch_callback(epoch, loss, model):
     if (verbose):
         print(f'Epoch: {epoch}, loss: {loss :.5f}', flush=True)
 
     if (epoch % stats_interval == 0):
-        stats = get_statistics(model, X_test, y_test, epoch, print_res=verbose)
+        stats = get_statistics(model, 
+                               X_test, y_test, epoch, print_res=verbose)
         all_stats.append(stats)
 
+model.register_epoch_callback(epoch_callback)
 
-final_stats = get_statistics(model, X_test, y_test, n_epochs, print_res=verbose)
+if (verbose):
+    print("running training ...", flush=True)
+
+model.fit(X_train, y_train)
+
+final_stats = get_statistics(model, 
+                             X_test, y_test, n_epochs, print_res=verbose)
 
 all_stats.append(final_stats)
 
@@ -155,7 +148,7 @@ training_report = {
     'result_tag': tag,
     'ligand': ligand,
     'embedder': embedder,
-    'model_to_string': str(model),
+    'model_to_string': str(model.underling_model()),
     'batch_size': batch_size,
     'total_epochs': n_epochs,
     'seed': seed,

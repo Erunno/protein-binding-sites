@@ -21,7 +21,6 @@ for file in "$input_dir"/*.fasta; do
     filename_no_ext="${filename%.*}"
     out_file="$output_dir/sequences_${EMBEDDER}_${filename_no_ext}.zip"
 
-    # for debug puposeses
     echo processing file $filename
     curl \
      -X GET \
