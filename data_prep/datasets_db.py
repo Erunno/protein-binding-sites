@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
-from typing import Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 import numpy as np
 from numpy import ndarray
 from Levenshtein import distance as lev_distance
@@ -52,45 +52,36 @@ class ChainRecord:
 
         return np.array(binding_flags)
 
-    def ligand(self):
+    def ligand(self) -> str:
         return self.__data['ligand']
 
-    def embeddings(self, embedder):
+    def embeddings(self, embedder) -> Union[ndarray[ndarray[float]], None]:
         if self.__embedding_folder is None:
             return None
         
-        if self.__embeddings_data is not None:
-            return self.embeddings
-        
-        emb_file = os.path.join(
-            self.__embedding_folder, 
-            embedder.upper(), 
-            f'{self.full_id()}.npy')
+        if self.__embeddings_data is None:        
+            emb_file = os.path.join(
+                self.__embedding_folder, 
+                embedder.upper(), 
+                f'{self.full_id()}.npy')
 
-        self.__embeddings_data = np.load(emb_file)
+            self.__embeddings_data = np.load(emb_file)
 
         return self.__embeddings_data
     
     def free_embeddings_from_RAM(self):
         self.__embeddings_data = None
 
-    def __assert_binding_residues(self, binding_residues: List[str], binding_indexes: List[int]):
-        for i in range(len(binding_residues)):
-            binding_idx = binding_indexes[i]
-            binding_res = binding_residues[i]
-
-            assert self.__data['sequence'][binding_idx] == binding_res
-
-    def full_id(self):
+    def full_id(self) -> str:
         return f'{self.protein_id()}{self.chain_id()}'
 
-    def to_fasta_record(self):
+    def to_fasta_record(self) -> str:
         return f'>{self.full_id()}\n{self.sequence()}\n'
     
-    def original_line(self):
+    def original_line(self) -> str:
         return self.__original_line
     
-    def protrusion_vector_for(self, radius) -> List[int]:
+    def protrusion_vector_for(self, radius) -> Union[List[int], None]:
         if self.__protrusion_record is None:
             return None
         
@@ -110,7 +101,7 @@ class ChainRecord:
 
         return list(all_radii)
 
-    def has_protrusion_record(self):
+    def has_protrusion_record(self) -> bool:
         return self.__protrusion_record is not None
     
     def protrusion_sequence_matches_sequence(self) -> bool:
@@ -167,6 +158,13 @@ class ChainRecord:
                 best_rec = chain_rec
 
         return best_rec
+    
+    def __assert_binding_residues(self, binding_residues: List[str], binding_indexes: List[int]):
+        for i in range(len(binding_residues)):
+            binding_idx = binding_indexes[i]
+            binding_res = binding_residues[i]
+
+            assert self.__data['sequence'][binding_idx] == binding_res
 
 class ProteinRecord:
     def __init__(self):
@@ -235,6 +233,10 @@ class LigandDataset:
                            protrusion_data=self.__protrusion_data)
 
 class SeqDatasetDb:
+    @staticmethod
+    def all_ligands() -> List[str]:
+        return all_ligands
+    
     def __init__(self, 
                  sequences_folder=config.yu_sequences_folder,
                  embeddings_folder=config.embeddings_folder):
@@ -243,7 +245,7 @@ class SeqDatasetDb:
         self.__protrusion_data = None
         self.__embedding_folder = embeddings_folder
 
-    def get_data_set_for(self, ligand):
+    def get_dataset_for(self, ligand):
         return self.__construct_ligand_ds(ligand)
     
     def load_protrusion_data_file(self, file_path):
@@ -270,7 +272,7 @@ class SeqDatasetDb:
 
             dict[id] = chain
 
-        return dict.values()
+        return list(dict.values())
 
     def __construct_ligand_ds(self, ligand):
         return LigandDataset(ligand,
@@ -300,3 +302,52 @@ class Helpers:
     def filter_chains_with_valid_protrusion(chains: List[ChainRecord]) -> List[ChainRecord]:
         valid, _ = Helpers.split_chains_to_valid_and_invalid_protrusion(chains)
         return valid
+
+    @staticmethod
+    def concat_chain_data(*accessors, chains) -> ndarray:
+        result = None
+
+        for chain in chains:
+            chain_vectors = accessors[0](chain)
+
+            for accessor in accessors[1:]:
+                part_vector = np.array(accessor(chain))
+                chain_vectors = np.column_stack((chain_vectors, part_vector))
+
+            if result is None:
+                result = chain_vectors
+            else:
+                result = np.concatenate((result, chain_vectors))
+
+        return result
+
+class DataAccessors:
+    @staticmethod
+    def biding_sights_vect():
+        
+        def get_biding_sights_vect(chain: ChainRecord):
+            return chain.binding_sights()
+        
+        return get_biding_sights_vect
+    
+    @staticmethod
+    def embeddings(embedder) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        
+        def get_embeddings(chain: ChainRecord):
+            return chain.embeddings(embedder)
+
+        return get_embeddings
+
+    @staticmethod
+    def protrusion(*radii) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        
+        def get_protrusion(chain: ChainRecord):
+            result = np.array(chain.protrusion_vector_for(radii[0]))
+
+            for radius in radii[1:]:
+                protrusion = chain.protrusion_vector_for(radius)
+                result = np.column_stack((result, protrusion))
+
+            return result
+
+        return get_protrusion

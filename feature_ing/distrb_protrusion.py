@@ -6,7 +6,7 @@ import json
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Process input and output directories')
-parser.add_argument('--file', help='Specify the output file', required=False)
+parser.add_argument('--file', help='Specify the input file', required=False)
 
 args = parser.parse_args()
 fname = args.file

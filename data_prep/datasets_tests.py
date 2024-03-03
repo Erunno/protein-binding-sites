@@ -1,4 +1,6 @@
 import re
+
+import numpy as np
 import datasets_db
 import traceback
 
@@ -126,7 +128,7 @@ def protrusion_radii_are_correct():
 
 def all_ligand_datasets_not_empty():
     for ligand in ALL_LIGANS:
-        ds = db.get_data_set_for(ligand)
+        ds = db.get_dataset_for(ligand)
 
         testing = ds.testing()
         training = ds.training()
@@ -155,7 +157,7 @@ def protrusion_does_not_throw_exception():
     return True, None
 
 def all_radii_function_on_db_returns_correct_value():
-    ligand_ds = db.get_data_set_for('AMP')
+    ligand_ds = db.get_dataset_for('AMP')
     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(ligand_ds.all()) 
 
     expected_all_radii = sorted(all_chains[0].get_all_protrusion_radii())
@@ -165,25 +167,6 @@ def all_radii_function_on_db_returns_correct_value():
 
     if not are_same:
         return False, f'Get all radii failed - expected {expected_all_radii}, got {actual_all_radii}'
-
-    return True, None
-
-def can_load_all_embeddings():
-    all_chains = db.get_all_chain_records()
-
-    i = 0
-    for chain in all_chains:
-        embeddings = chain.embeddings(tested_embedder)
-        expected_len = len(chain.sequence())
-
-        i += 1
-        if i % 20 == 0:
-            print(f'\r  {BLUE}checking embeddings - {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
-
-        if embeddings is None or len(embeddings) != expected_len:
-            return False, f'Unexpected embeddings: len={len(embeddings)} should be {expected_len} \n"{embeddings}"'
-        
-        chain.free_embeddings_from_RAM()
 
     return True, None
 
@@ -204,6 +187,134 @@ def most_of_the_records_matches_protrusion_sequence():
     
     return True, None
 
+def data_accessor_for_binding_sights_works():
+    all_chains = db.get_all_chain_records()
+    binding_sights_accessor = datasets_db.DataAccessors.biding_sights_vect()
+
+    for chain in all_chains:
+        expected = chain.binding_sights()
+        actual = binding_sights_accessor(chain)
+
+        if not (expected == actual).all():
+            return False, f'Binding sights accessor returned different value'
+        
+    return True, None
+
+def data_accessor_for_protrusion_works():
+    all_chains = db.get_all_chain_records()
+    binding_sights_accessor = datasets_db.DataAccessors.protrusion(1, 2, 4)
+
+    for chain in all_chains:
+        prot1 = chain.protrusion_vector_for(1)
+        prot2 = chain.protrusion_vector_for(2)
+        prot4 = chain.protrusion_vector_for(4)
+
+        expected = np.array([[prot1[i], prot2[i], prot4[i]] for i in range(len(prot1))])
+        actual = binding_sights_accessor(chain)
+
+        if not (expected == actual).all():
+            return False, f'Protrusion sight accessor returned different value'
+
+    return True, None
+
+def concat_chain_data_works():
+    the_chain_1 = 1 
+    the_chain_2 = 10 
+
+    data = [the_chain_1, the_chain_2]
+
+    def mock_accessor_1(chain):
+        return np.array([1, 2, 3]) * chain
+    
+    def mock_accessor_2(chain):
+        return np.array([[11, 12], [21, 22], [31, 32]]) * chain
+    
+    def mock_accessor_3(chain):
+        return np.array([100, 200, 300]) * chain
+
+    actual = datasets_db.Helpers.concat_chain_data(
+        mock_accessor_1, mock_accessor_2, mock_accessor_3,
+        chains=data
+    )
+
+    expected = np.array([
+        [1, 11, 12, 100],
+        [2, 21, 22, 200],
+        [3, 31, 32, 300],
+        [10, 110, 120, 1000],
+        [20, 210, 220, 2000],
+        [30, 310, 320, 3000],
+    ])
+
+    if not (actual == expected).all():
+        return False, f'Unexpected return value from {datasets_db.Helpers.concat_chain_data.__name__}'
+
+    return True, None    
+
+def can_load_all_embeddings():
+    all_chains = db.get_all_chain_records()
+
+    i = 0
+    for chain in all_chains:
+        embeddings = chain.embeddings(tested_embedder)
+        expected_len = len(chain.sequence())
+
+        i += 1
+        if i % 20 == 0:
+            print(f'\r  {BLUE}checking embeddings - {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
+
+        if embeddings is None or len(embeddings) != expected_len:
+            return False, f'Unexpected embeddings: len={len(embeddings)} should be {expected_len} \n"{embeddings}"'
+        
+        chain.free_embeddings_from_RAM()
+
+    return True, None
+
+def data_accessor_for_embeddings_works():
+    all_chains = db.get_all_chain_records()
+    
+    embedding_accessor = datasets_db.DataAccessors.embeddings(tested_embedder)
+
+    i = 0
+    for chain in all_chains:
+        expected_embeddings = chain.embeddings(tested_embedder)
+        actual = embedding_accessor(chain)
+
+        i += 1
+        if i % 20 == 0:
+            print(f'\r  {BLUE}checking embeddings - {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
+
+        if not (expected_embeddings == actual).all():
+            return False, f'Embeddings accessor returned different value'
+        
+        chain.free_embeddings_from_RAM()
+
+    return True, None
+
+def embeddings_format_is_correct():
+    all_chains = db.get_all_chain_records()
+    expected_embedding_vector_size = len(all_chains[0].embeddings(tested_embedder)[0]) 
+
+    i = 0
+    for chain in all_chains:
+        embeddings = chain.embeddings(tested_embedder)
+        bindings_flags = chain.binding_sights()
+
+        i += 1
+        if i % 20 == 0:
+            print(f'\r  {BLUE}checking embeddings - {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
+
+        if len(bindings_flags) != len(embeddings):
+            return False, 'Binding sights vector size and the embeddings vector size does not match'
+
+        for embedding in embeddings:
+            if len(embedding) != expected_embedding_vector_size:
+                return False, f'Unexpected embedding vector size - expected {expected_embedding_vector_size} got {len(embedding)}'
+            
+        chain.free_embeddings_from_RAM()
+
+    return True, None
+
 # run test cases
 
 def _run(test_case):
@@ -220,7 +331,6 @@ def _run(test_case):
         print(f'\r{RED}[✘] {test_case.__name__}{RESET}{SPACE}')
         print(f'  Error: {err_message}')
         
-
 print(f'\n{BLUE}Running tests...{RESET}\n')
 
 all_symbols = globals()
