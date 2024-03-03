@@ -3,9 +3,10 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
-from typing import Dict, List
+from typing import Dict, List, Union
 import numpy as np
 from numpy import ndarray
+from Levenshtein import distance as lev_distance
 
 all_ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
 
@@ -111,6 +112,23 @@ class ChainRecord:
 
     def has_protrusion_record(self):
         return self.__protrusion_record is not None
+    
+    def protrusion_sequence_matches_sequence(self) -> bool:
+        dist_from_3d_sequence = self.get_lev_distance_of_3d_sequence_and_sequence()
+
+        if dist_from_3d_sequence is None:
+            return False
+        
+        return dist_from_3d_sequence == 0
+
+    def get_lev_distance_of_3d_sequence_and_sequence(self) -> Union[int, None]:
+        if self.__protrusion_record is None:
+            return None
+
+        _3d_structure_sequence = self.__protrusion_record['sequence']
+
+        return lev_distance(_3d_structure_sequence, self.sequence())
+
 
     def __load_protrusion_record(self, protrusion_data):
         if protrusion_data is None:
@@ -120,11 +138,35 @@ class ChainRecord:
             return None
         
         protein_record = protrusion_data[self.protein_id()]
-        chain_record = next(
-            filter(lambda x: x['chain'].upper() == self.chain_id(),
-                   protein_record), None)
+        chain_records = list(filter(lambda x: x['chain'].upper() == self.chain_id(),
+                                    protein_record))
+        
+        if len(chain_records) == 0:
+            return None
+        
+        if len(chain_records) == 1:
+            return chain_records[0]
+        
+        return self.__get_best_matching_record(chain_records)
 
-        return chain_record
+    def __get_best_matching_record(self, chain_records):
+        best_rec = None
+        best_dist = sys.maxsize
+
+        for chain_rec in chain_records:
+            _3d_structure_sequence = chain_rec['sequence']
+
+            lev_dist = lev_distance(self.sequence(), _3d_structure_sequence)
+
+            if lev_dist < best_dist:
+                best_rec = chain_rec
+                best_dist = lev_dist
+
+            # prefer 'pdb' files over others
+            if lev_dist == best_dist and chain_rec['origin_file'].endswith('pdb'):
+                best_rec = chain_rec
+
+        return best_rec
 
 class ProteinRecord:
     def __init__(self):
@@ -241,3 +283,20 @@ class Helpers:
     def filter_chains_with_protrusion(chains: List[ChainRecord]) -> List[ChainRecord]:
         return [chain for chain in chains if chain.has_protrusion_record()]
 
+    @staticmethod
+    def split_chains_to_valid_and_invalid_protrusion(chains: List[ChainRecord]) -> tuple[List[ChainRecord], List[ChainRecord]]:
+        valid, invalid = [], []
+
+        for chain in chains:
+            array_to_extend = valid \
+                              if chain.protrusion_sequence_matches_sequence() \
+                              else invalid
+            
+            array_to_extend.append(chain) 
+
+        return valid, invalid
+
+    @staticmethod
+    def filter_chains_with_valid_protrusion(chains: List[ChainRecord]) -> List[ChainRecord]:
+        valid, _ = Helpers.split_chains_to_valid_and_invalid_protrusion(chains)
+        return valid

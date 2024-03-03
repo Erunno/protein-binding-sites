@@ -16,7 +16,7 @@ RED = '\033[91m'
 GREEN = '\033[92m'
 YELLOW = '\033[93m'
 BLUE = '\033[94m'
-SPACE = '                                 '
+SPACE = '                       '
 
 # init database
 
@@ -87,7 +87,7 @@ def chain_id_has_correct_format():
     for chain in all_chains:
         ch_id = chain.chain_id()
 
-        if not re.match('^[A-Z]$', ch_id):
+        if not re.match('^[A-Z0-9]$', ch_id):
             return False, f'Chain id had incorrect format: "{ch_id}"'
         
     return True, None
@@ -98,7 +98,7 @@ def full_id_has_correct_format():
     for chain in all_chains:
         full_id = chain.full_id()
 
-        if not re.match('^[a-z0-9]{4}[A-Z]$', full_id):
+        if not re.match('^[a-z0-9]{4}[A-Z0-9]$', full_id):
             return False, f'Full id had incorrect format: "{full_id}"'
         
     return True, None
@@ -187,9 +187,26 @@ def can_load_all_embeddings():
 
     return True, None
 
+def most_of_the_records_matches_protrusion_sequence():
+    max_invalid_percent = 0.02
+
+    all_chains = db.get_all_chain_records()
+    
+    valid, invalid = datasets_db.Helpers.split_chains_to_valid_and_invalid_protrusion(all_chains)
+
+    if len(valid) + len(invalid) != len(all_chains):
+        return False, 'valid + invalid != all'
+
+    invalid_percent = len(invalid) / len(all_chains)
+
+    if invalid_percent > max_invalid_percent:
+        return False, f'Max number of invalid chains exceeded - was {invalid_percent * 100} %'
+    
+    return True, None
+
 # run test cases
 
-def run(test_case):
+def _run(test_case):
     print(f'{BLUE}  ...running {test_case.__name__}{RESET}', end='', flush=True)
     try:
         success, err_message = test_case()
@@ -206,18 +223,15 @@ def run(test_case):
 
 print(f'\n{BLUE}Running tests...{RESET}\n')
 
-run(can_load_all_datasets)
-run(can_access_protein_id)
-run(can_access_chain_id)
-run(can_access_full_id)
-run(protein_id_has_correct_format)
-run(chain_id_has_correct_format)
-run(full_id_has_correct_format)
-run(all_ligand_datasets_not_empty)
-run(there_are_some_chains_with_protrusion_records)
-run(protrusion_radii_are_correct)
-run(protrusion_does_not_throw_exception)
-run(all_radii_function_on_db_returns_correct_value)
-run(can_load_all_embeddings)
+all_symbols = globals()
+tests = [
+    func 
+    for func in all_symbols.values() 
+    if callable(func) and 
+       func.__module__ == __name__ and
+       not func.__name__.startswith('_')]
+
+for test_case in tests:
+    _run(test_case)
 
 print()

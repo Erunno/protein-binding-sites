@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from Bio.PDB import PDBParser
+from Bio.PDB import MMCIFParser
 from Bio.PDB.NeighborSearch import NeighborSearch
 from pathlib import Path
 import numpy as np
@@ -24,71 +25,25 @@ args = parser.parse_args()
 output_file = args.output_file
 input_dirs = args.input_dirs
 radii = args.radius
-reference_data_folder = config.yu_sequences_folder
 
 UP_char = "\033[A"
 
-# for testing purposes
-def get_reference_sequences():
-    data = {}
-
-    for subfolder in ['Training sets', 'Testing sets']:
-        folder_path = os.path.join(reference_data_folder, subfolder)
-
-        if os.path.exists(folder_path):
-            for filename in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, filename)
-
-                if os.path.isfile(file_path):
-                    with open(file_path, 'r') as file:
-                        for line in file:
-                            if line == '':
-                                continue
-
-                            parts = line.strip().split(';')
-                            key, value = (parts[0] + parts[1]).lower(), parts[5]
-
-                            if (key in data) and data[key] != value:
-                                print(f"warn: protein {key} has been found with different sequences")
-
-                            data[key.lower()] = value
-    return data
-
-def get_reference_verification(structure, chain, sequence, reference_sequences):
-    key = f'{structure.id}{chain.id}'.lower()
-
-    if (key not in reference_sequences):
-        # print (f"\nwarn: for {key} protein there is no reference sequence")
-        return {
-            "status": "WARN",
-            "message": "no reference sequence"
-        }
-    
-    if (reference_sequences[key] != sequence):
-        # print (f"\nerror: sequence for protein {key} differs from reference")
-        return {
-            "status": "ERR",
-            "message": "sequence differs from the reference",
-            "lev_distance": lev_distance(sequence, reference_sequences[key])
-        }
-
-    return {
-        "status": "OK"
-    }
-
-
-def get_prot_id(pdb_fname : str):
+def get_prot_id(pdb_fname: str):
     if (pdb_fname.endswith('.pdb')):
         return pdb_fname[-9:-5]
     
     if (pdb_fname.endswith('.ent')):
         return pdb_fname[-8:-4]
     
-    if (pdb_fname.endswith('.pdb')):
+    if (pdb_fname.endswith('.cif')):
         return pdb_fname[-8:-4]
 
-def build_structure(pdb_file):
-    parser = PDBParser(QUIET=True)
+def build_structure(pdb_file: str):
+    if (pdb_file.endswith('cif')):
+        parser = MMCIFParser(QUIET=True)
+    else:
+        parser = PDBParser(QUIET=True)
+
     id = get_prot_id(pdb_file)
     structure = parser.get_structure(id, pdb_file)
     
@@ -105,14 +60,18 @@ def search_chain(chain, ns, radius):
         'TYR': 'Y', 'VAL': 'V'
     }
 
+    def map_name(name):
+        if name in three_to_one:
+            return three_to_one[name]
+        return f'#({name})'
+
     protrusions = []
     sequence = ""
     
     for residue in chain:
         # Exclude hetero residues or non-standard residues with insertion code ' '
         if residue.get_id()[0] == " ":
-
-            sequence += three_to_one[residue.get_resname()]
+            sequence += map_name(residue.get_resname())
 
             max_neighbors_count = 0
 
@@ -127,7 +86,7 @@ def search_chain(chain, ns, radius):
     
     return protrusions, sequence
 
-def get_neighborhood_counts(pdb_file, radii, reference_sequences):
+def get_neighborhood_counts(pdb_file, radii):
     structure, ns = build_structure(pdb_file)
     protein_id = structure.id
 
@@ -148,16 +107,14 @@ def get_neighborhood_counts(pdb_file, radii, reference_sequences):
             results_per_chain.append({
                 'chain': chain.id.upper(),
                 'results': results_per_radius,
-                'reference_verification': get_reference_verification(structure, chain, sequence, reference_sequences)
+                'sequence': sequence,
+                'origin_file': os.path.abspath(pdb_file)
             })
 
     return protein_id, results_per_chain
 
 start_time = datetime.now() 
 def print_progress(done, total, bar_len, result_object = None):
-    # if (done % 10 != 0) and (done != total):
-    #     return
-
     estimate = '??? remaining'
     now = datetime.now()
     elapsed_time = now - start_time
@@ -176,8 +133,7 @@ def print_progress(done, total, bar_len, result_object = None):
     loading_bar_progress = bar_len * done // total
     bar_string = f'[{loading_bar_progress * "="}{(bar_len - loading_bar_progress) * " "}] ({done}/{total}) ... {estimate} {result_size}'
 
-    print('\r', bar_string, flush=True)
-    print(f'{UP_char}', end='')
+    print('\r', bar_string, end='', flush=True)
 
 def list_files_in_directory(directory):
     path = Path(directory)
@@ -206,7 +162,7 @@ def merge_results(res1, res2, protein_id):
     intersection = set(chains1) & set(chains2)
 
     if (len(intersection) != 0):
-        print(f"ERR: duplicity found - protein {protein_id} - dup chains {intersection}")
+        print(f"\nERR: duplicity found - protein {protein_id} - dup chains {intersection}")
 
     return res1 + res2
 
@@ -217,16 +173,13 @@ all_count = len(all_pdbs)
 loading_bar_len = 40
 
 result = {}
-reference_sequences = get_reference_sequences() 
-
-duplicities = []
 
 print ('Starting the protrusion', flush=True)
 print_progress(done, all_count, loading_bar_len)
 
 for file_path in all_pdbs:
 
-    protein_id, protrusion_results = get_neighborhood_counts(file_path, radii, reference_sequences)
+    protein_id, protrusion_results = get_neighborhood_counts(file_path, radii)
 
     if protein_id in result:
         protrusion_results = merge_results(protrusion_results, result[protein_id], protein_id)            
@@ -236,14 +189,9 @@ for file_path in all_pdbs:
     done += 1
     print_progress(done, all_count, loading_bar_len, result)
 
-if len(duplicities) != 0:
-    print(f"Duplicities found (count {len(duplicities)}): {duplicities}")
-    result['duplicities'] = duplicities
-
 result_string = pprint.pformat(result, compact=True, width=100).replace("'",'"')
 
 print ('\n\nDONE')
-
 
 if output_file is None:
     print(f'\n{result_string}')
