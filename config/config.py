@@ -9,3 +9,4 @@ proteins_by_datasets_file = f'{data_top_folder}/yu_datasets/proteins_by_datasets
 embeddings_folder = f'{data_top_folder}/embedded_sequences'
 networks_results_folder = f'{data_top_folder}/netw_results'
 protrusion_data_file = f'{data_top_folder}/3d_proc/mappings_to_pdbs.json'
+graphs_folder = f'{data_top_folder}/graphs'

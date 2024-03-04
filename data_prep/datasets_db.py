@@ -217,15 +217,8 @@ class LigandDataset:
             else:
                 self.__testing_data = chain_records
 
-    def get_all_radii(self):
-        all_radii = set(self.all()[0].get_all_protrusion_radii())
-
-        for chain in self.all():
-            radii = set(chain.get_all_protrusion_radii())
-
-            all_radii = all_radii.intersection(radii)
-
-        return sorted(all_radii)
+    def get_all_radii(self) -> List[float]:
+        return Helpers.get_all_radii(self.all())
     
     def __construct_chain_record(self, record_line):
         return ChainRecord(record_line,
@@ -320,6 +313,17 @@ class Helpers:
                 result = np.concatenate((result, chain_vectors))
 
         return result
+    
+    @staticmethod
+    def get_all_radii(chains: List[ChainRecord]):
+        all_radii = set(chains[0].get_all_protrusion_radii())
+
+        for chain in chains:
+            radii = set(chain.get_all_protrusion_radii())
+
+            all_radii = all_radii.intersection(radii)
+
+        return sorted(all_radii)
 
 class DataAccessors:
     @staticmethod

@@ -14,11 +14,7 @@ fname = args.file
 with open(fname, 'r') as file:
     data = json.load(file)
 
-def get_file_name_without_extension(file_path):
-    base_name = os.path.basename(file_path)
-    name, extension = os.path.splitext(base_name)
-    
-    return name
+
 
 def get_all_radii(data):
     radii = set()

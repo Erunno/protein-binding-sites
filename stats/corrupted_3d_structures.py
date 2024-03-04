@@ -29,7 +29,7 @@ print()
 def print_stats_of(label, valid: List[datasets.ChainRecord], invalid: List[datasets.ChainRecord]):
     print(f'  {label + ":":10}  {YELLOW}{len(valid + invalid):4}{BLUE}  ', end='')
     print(f'({GREEN}{len(valid):4}{BLUE}/{RED}{len(invalid):3}{BLUE})  ', end='')
-    print(f' {RED}{len(invalid) / len(valid + invalid) * 100:.2f} %{BLUE}', end='')
+    print(f' {RED if len(invalid) != 0 else GREEN}{len(invalid) / len(valid + invalid) * 100:.2f} %{BLUE}', end='')
 
     if len(invalid) == 0:
         print()
