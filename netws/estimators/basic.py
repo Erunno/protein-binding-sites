@@ -17,15 +17,16 @@ class BasicNetwork(BaseEstimator, RegressorMixin):
                  epochs, batch_size):
         
         # Initialize the sequential model
-        self.model = self._create_simple_sequential_model(input_size, 1, hidden_sizes)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.input_size = input_size
+        self.hidden_sizes = hidden_sizes
+        self.model = None
+        self.optimizer = None
         self.criterion = nn.BCELoss()
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model.to(self.device)
         
         self.epoch_callback = None
         self.name = "BasicNetwork"
@@ -65,7 +66,7 @@ class BasicNetwork(BaseEstimator, RegressorMixin):
             batch_size=self.batch_size, shuffle=True)
 
         # Reset sequential model
-        self._reset_model_parameters()
+        self._init_model()
 
         if (self.verbose):
             print('')
@@ -99,7 +100,7 @@ class BasicNetwork(BaseEstimator, RegressorMixin):
         if (self.verbose):
             print(f'info ({self.name}): predicting...', flush=True)
 
-        # # Input validation
+        # Input validation
         X = check_array(X)
 
         # Standardize input data
@@ -114,6 +115,14 @@ class BasicNetwork(BaseEstimator, RegressorMixin):
 
     def underling_model(self):
         return self.model
+    
+    def _init_model(self):
+        self.model = self._create_simple_sequential_model(
+            self.input_size, 1, self.hidden_sizes)
+        
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
+        self.model.to(self.device)
 
     def _create_simple_sequential_model(self, input_size, output_size, hidden_sizes):
         layers = []
@@ -129,13 +138,3 @@ class BasicNetwork(BaseEstimator, RegressorMixin):
                 layers.append(nn.ReLU())
 
         return nn.Sequential(*layers)
-    
-    def _reset_model_parameters(self):
-        for layer in self.model.children():
-            if isinstance(layer, nn.Linear):
-                # Reinitialize the weights and biases using a chosen initialization method
-                init.xavier_uniform_(layer.weight)
-                init.zeros_(layer.bias)
-
-
-

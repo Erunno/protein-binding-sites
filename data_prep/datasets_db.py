@@ -224,6 +224,33 @@ class LigandDataset:
         return ChainRecord(record_line,
                            embedding_folder=self.__embedding_folder,
                            protrusion_data=self.__protrusion_data)
+    
+    def get_train_test_data(self, accessors, filters=[]):
+        test, train = self.testing(), self.training()
+
+        for filter in filters:
+            train = filter(train)
+            test = filter(test)
+
+        X_train = Helpers.concat_chain_data(
+            *accessors,
+            chains=train
+        )
+        y_train = Helpers.concat_chain_data(
+            DataAccessors.biding_sights_vect(),
+            chains=train
+        )
+
+        X_test = Helpers.concat_chain_data(
+            *accessors,
+            chains=test
+        )
+        y_test = Helpers.concat_chain_data(
+            DataAccessors.biding_sights_vect(),
+            chains=test
+        )
+
+        return X_train, y_train, X_test, y_test
 
 class SeqDatasetDb:
     @staticmethod
@@ -238,7 +265,7 @@ class SeqDatasetDb:
         self.__protrusion_data = None
         self.__embedding_folder = embeddings_folder
 
-    def get_dataset_for(self, ligand):
+    def get_dataset_for(self, ligand) -> LigandDataset:
         return self.__construct_ligand_ds(ligand)
     
     def load_protrusion_data_file(self, file_path):
@@ -298,7 +325,7 @@ class Helpers:
 
     @staticmethod
     def concat_chain_data(*accessors, chains) -> ndarray:
-        result = None
+        results = []
 
         for chain in chains:
             chain_vectors = accessors[0](chain)
@@ -307,12 +334,11 @@ class Helpers:
                 part_vector = np.array(accessor(chain))
                 chain_vectors = np.column_stack((chain_vectors, part_vector))
 
-            if result is None:
-                result = chain_vectors
-            else:
-                result = np.concatenate((result, chain_vectors))
-
-        return result
+            for vect in chain_vectors:
+                results.append(vect)
+            
+        return np.array(results)
+        
     
     @staticmethod
     def get_all_radii(chains: List[ChainRecord]):

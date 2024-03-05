@@ -5,6 +5,7 @@
 #SBATCH -A nprg058s
 #SBATCH --cpus-per-task=4
 #SBATCH --time=0-02:00:00
+#SBATCH --mem-per-cpu=32G
 #SBATCH --signal=B:USR1@30
 #SBATCH --output=/home/brabecm4/diplomka/protein-binding-sites/data/logs/%A_%a.out
 

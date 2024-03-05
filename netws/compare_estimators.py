@@ -1,13 +1,13 @@
-
+import argparse
+import math
 import os
 import sys
-
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
 import json
+import numpy as np
 import random
 import string
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -18,32 +18,26 @@ from seed_network import seed_all
 from evaluator import get_statistics
 from datetime import datetime
 from estimators.basic import BasicNetwork
+from estimators.partial import PartialInputModel
 from mlxtend.evaluate import paired_ttest_5x2cv
 from sklearn.metrics import matthews_corrcoef
+import data_prep.datasets_db as datasets
+import pprint
 
+parser = argparse.ArgumentParser(description='Ligand binding sites model comparing')
+parser.add_argument('--ligand', type=str, help='Name of the ligand')
+args = parser.parse_args()
 
-binding_sights_db_filename = config.binding_sights_file
-dataset_db_filename = config.proteins_by_datasets_file
-embeddings_top_folder = config.embeddings_folder
-results_folder = config.networks_results_folder
-protrusion_data_fname = config.protrusion_data_file
+protrusion_fname = '/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json'
 
-# tag = args.tag 
-# ligand = args.ligand
-ligand = "ZN"
-# batch_size = args.batch_size
-# n_epochs = args.epochs
-# seed = args.seed
-# learning_rate = args.learning_rate
-# hidden_layers = args.hidden_layers
-# stats_interval = args.epoch_stats_interval
-# verbose = True if args.verbose else False
-# use_simple_model = args.use_simple_model
-# embedder = args.embedder
-embedder = "T5"
-# protrusion_data_fname = args.protrusion_data_file
-# pdb_mappings_fname = args.pdb_mappings_fname
-# protrusion_radii = args.used_protrusion_radii
+tag = "v1"
+ligand = args.ligand
+batch_size = 1024
+epochs = 80
+learning_rate = 0.001
+hidden_layers = [512, 256, 128]
+embedder = "ESM"
+radius=10.0
 
 seed_all(42)
 
@@ -52,16 +46,15 @@ radii_count = 0
 
 print("loading data ...", flush=True)
 
-data_loader = dl.DataLoader(
-    binding_sights_db_fname=binding_sights_db_filename,
-    dataset_by_ligands_db_fname=dataset_db_filename,
-    embeddings_folder=os.path.join(embeddings_top_folder, embedder),
-    verbose=True
+db = datasets.SeqDatasetDb()
+db.load_protrusion_data_file(protrusion_fname)
+
+ds = db.get_dataset_for(ligand)
+
+X_train, y_train, X_test, y_test = ds.get_train_test_data(
+    [datasets.DataAccessors.embeddings(embedder), datasets.DataAccessors.protrusion(radius)],
+    [datasets.Helpers.filter_chains_with_valid_protrusion]
 )
-
-print("parsing data ...", flush=True)
-
-X_train, y_train, X_test, y_test = data_loader.get_data_set_for(ligand)
 
 X_train = torch.tensor(X_train, dtype=torch.float32)
 y_train = torch.tensor(y_train, dtype=torch.float32)
@@ -76,30 +69,37 @@ print("defining estimators ...", flush=True)
 
 input_size = len(X_train[0])
 
-model_1 = BasicNetwork(
-    input_size=input_size,
-    epochs=10,
-    batch_size=1024,
-    hidden_sizes=[512, 256, 64],
-    learning_rate=0.001
-)
-model_1.set_name("model 1")
+model_1 = PartialInputModel(
+    input_size=input_size - 1,
+    model = BasicNetwork(
+        input_size=input_size - 1,
+        epochs=epochs,
+        batch_size=batch_size,
+        hidden_sizes=hidden_layers,
+        learning_rate=learning_rate
+    ) 
+) 
+model_1.set_name("embeddings only")
 model_1.set_verbose()
+
 
 model_2 = BasicNetwork(
     input_size=input_size,
-    epochs=6,
-    batch_size=1024,
-    hidden_sizes=[64, 32],
-    learning_rate=0.01
+    epochs=epochs,
+    batch_size=batch_size,
+    hidden_sizes=hidden_layers,
+    learning_rate=learning_rate
 )
-model_2.set_name("model 2")
+model_2.set_name("protrusion in first layer")
 model_2.set_verbose()
+
+scores = {}
+scores[model_1.get_name()] = []
+scores[model_2.get_name()] = []
 
 def mcc_scorer(model, X, y):
     pred_y = model.predict(X)
     mcc = matthews_corrcoef(y, pred_y)
-
 
     def print_ones_and_zeros(label, y):
         zeros_count = np.count_nonzero(y == 0)
@@ -111,13 +111,25 @@ def mcc_scorer(model, X, y):
     print_ones_and_zeros('reference:', y)
     print_ones_and_zeros('real:     ', pred_y)
 
+    result = scores[model.get_name()]
+    result.append({
+        'mcc': mcc,
+        'counts': {
+            'reference': {
+                'zeros': np.count_nonzero(y == 0), 
+                'ones': np.count_nonzero(y == 1) 
+            },
+            'model': {
+                'zeros': np.count_nonzero(pred_y == 0), 
+                'ones': np.count_nonzero(pred_y == 1) 
+            },
+        }
+    })
+
     return mcc 
 
 print("evaluating...")
 
-# t, p = paired_ttest_5x2cv(
-#     estimator1=model_1, estimator2=model_2, 
-#     X=X, y=y.int(), scoring='accuracy', random_seed=1)
 t, p = paired_ttest_5x2cv(
     estimator1=model_1, estimator2=model_2, 
     X=X, y=y.int(), scoring=mcc_scorer, random_seed=1)
@@ -129,3 +141,34 @@ if p <= 0.05:
 else:
     print('Algorithms probably have the same performance')
 
+report = {
+    'tag': tag,
+    'models': [model_1.get_name(), model_2.get_name()],
+    'scores': scores,
+    'ligand': ligand,
+    'p-value': p if not math.isnan(p) else 'nan',
+    't-statistic': t if not math.isnan(t) else 'nan',
+    'batch_size': batch_size,
+    'epochs': epochs,
+    'learning_rate': learning_rate,
+    'hidden_layers': hidden_layers,
+    'embedder': embedder,
+    'radius': radius,
+}
+
+str_report = pprint.pformat(report, compact=True, width=100).replace("'",'"')
+
+def generate_random_string(length):
+    letters = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters) for _ in range(length))
+
+random_suffix = generate_random_string(5)
+result_file_name = f'{ligand}_hl{"-".join([str(n) for n in hidden_layers])}.{datetime.now().strftime("%d-%m-%y-%Hh%Mm%Ss.%f")}.{random_suffix}.json'
+
+result_path = os.path.join(config.model_comparisons_folder, result_file_name)
+with open(result_path, 'w') as file:
+    file.write(str_report)
+
+print ('report: ', str_report)
+
+print('successfully finished', flush=True)

@@ -21,10 +21,10 @@ def get_command(params):
 
     command = [
         'python',
-        '/home/brabecm4/diplomka/protein-binding-sites/netws/network.py',
-        '--tag', 'basic_v2',
+        '/home/brabecm4/diplomka/protein-binding-sites/netws/network.v2.py',
+        '--tag', 'basic_v3',
         '--verbose', 'True',
-        '--use-simple-model', 'True',
+        # '--use-simple-model', 'True',
         '--hidden-layers', *map(str, params['hidden_layers']),
         '--seed', str(seed),
         '--ligand', params['ligand'],
@@ -35,7 +35,7 @@ def get_command(params):
         '--epoch-stats-interval', str(params['epoch_stats_interval']),
         # if not present protrusion is not used
         # '--protrusion-data-file', r'/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusions.big.json',
-        '--pdb-mappings-fname', r'/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/mappings_to_pdbs.json',
+        # '--pdb-mappings-fname', r'/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/mappings_to_pdbs.json',
     ]
 
     return ' '.join(command)
@@ -113,10 +113,10 @@ parameters_to_test = {
     'ligand': ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN'],
     # 'ligand': ['GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN' ], # just some of the ligands
     'learning_rate': [0.01, 0.001, 0.0001],
-    'epochs': [100],
+    'epochs': [120],
     'batch_size': [1000],
     'epoch_stats_interval': [10],
-    'embedder': ['T5', 'BERT', 'ESM'],
+    'embedder': ['ESM'],
     # 'embedder': ['ESM', 'T5', 'BERT'],
 }
 
