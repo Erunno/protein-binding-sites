@@ -11,7 +11,7 @@ GREEN = '\033[92m'
 YELLOW = '\033[93m'
 BLUE = '\033[94m'
 
-# python3 corrupted_3d_structures.py --protrusion-file /home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json
+# python3 /home/brabecm4/diplomka/protein-binding-sites/stats/corrupted_3d_structures.py --protrusion-file /home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json
 
 parser = argparse.ArgumentParser(description='Show corrupted protrusion records stats')
 parser.add_argument('--protrusion-file', help='Specify input protrusion', required=True)

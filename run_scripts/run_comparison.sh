@@ -9,8 +9,8 @@
 #SBATCH --signal=B:USR1@30
 #SBATCH --output=/home/brabecm4/diplomka/protein-binding-sites/data/logs/%A_%a.out
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <ligand>"
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 <ligand> <radius>"
   exit 1
 fi
 
@@ -18,7 +18,7 @@ echo "Starting the job"
 start_time=$(date +%s.%N)
 
 source /home/brabecm4/diplomka/protein-binding-sites/python_envs/pytorch_envs/bin/activate
-python3 /home/brabecm4/diplomka/protein-binding-sites/netws/compare_estimators.py --ligand $1
+python3 /home/brabecm4/diplomka/protein-binding-sites/netws/compare_estimators.py --ligand $1 --radius $2
 
 end_time=$(date +%s.%N)
 elapsed_time=$(echo "$end_time - $start_time" | bc)

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 
-class PartialInputModel(BaseEstimator, RegressorMixin):
+class PartialInputNetwork(BaseEstimator, RegressorMixin):
     def __init__(self, input_size, model):
         self.model = model
         self.input_size = input_size

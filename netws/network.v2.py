@@ -7,6 +7,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
 from estimators.basic import BasicNetwork
+from estimators.bypass import BypassedInputsNetwork
 import data_prep.datasets_db as dataset
 from evaluator import get_statistics
 import string
@@ -54,7 +55,8 @@ ds = db.get_dataset_for(args.ligand)
 print ('defining training and testing data ...', flush=True)
 
 X_train, y_train, X_test, y_test = ds.get_train_test_data(
-    [dataset.DataAccessors.embeddings(args.embedder)]
+    [dataset.DataAccessors.embeddings(args.embedder),
+     dataset.DataAccessors.biding_sights_vect()]
 )
 
 print ('initializing network ...', flush=True)
@@ -64,6 +66,12 @@ model = BasicNetwork(batch_size=args.batch_size,
                      hidden_sizes=args.hidden_layers,
                      epochs=args.epochs,
                      learning_rate=args.learning_rate)
+# model = BypassedInputsNetwork(batch_size=args.batch_size, 
+#                      input_size=len(X_train[0]),
+#                      hidden_sizes=args.hidden_layers,
+#                      epochs=args.epochs,
+#                      learning_rate=args.learning_rate,
+#                      bypassed_inputs=1)
 
 all_stats = []
 

@@ -9,5 +9,5 @@ python3 ./network.py --hidden-layers 200 50 --seed 42 --ligand AMP --learning-ra
 ```
 
 ```bash
-python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/create_result_table.py --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results --embedder-aliases ProtT5:-T5 ProtBert:-BERT --compare
+python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/create_result_table.py --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs --embedder-aliases ProtT5:-T5 ProtBert:-BERT --compare
 ```

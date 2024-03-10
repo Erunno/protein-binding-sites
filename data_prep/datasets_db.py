@@ -120,6 +120,11 @@ class ChainRecord:
 
         return lev_distance(_3d_structure_sequence, self.sequence())
 
+    def get_3d_structure_filename(self) -> Union[str, None]:
+        if self.__protrusion_record is None:
+            return None
+        
+        return self.__protrusion_record['origin_file']
 
     def __load_protrusion_record(self, protrusion_data):
         if protrusion_data is None:

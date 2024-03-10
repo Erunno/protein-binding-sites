@@ -18,7 +18,8 @@ from seed_network import seed_all
 from evaluator import get_statistics
 from datetime import datetime
 from estimators.basic import BasicNetwork
-from estimators.partial import PartialInputModel
+from estimators.bypass import BypassedInputsNetwork
+from estimators.partial import PartialInputNetwork
 from mlxtend.evaluate import paired_ttest_5x2cv
 from sklearn.metrics import matthews_corrcoef
 import data_prep.datasets_db as datasets
@@ -26,18 +27,19 @@ import pprint
 
 parser = argparse.ArgumentParser(description='Ligand binding sites model comparing')
 parser.add_argument('--ligand', type=str, help='Name of the ligand')
+parser.add_argument('--radius', type=float, help='Protrusion radius')
 args = parser.parse_args()
 
 protrusion_fname = '/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json'
 
-tag = "v1"
+tag = "v2_radii_tests"
 ligand = args.ligand
 batch_size = 1024
 epochs = 80
 learning_rate = 0.001
 hidden_layers = [512, 256, 128]
 embedder = "ESM"
-radius=10.0
+radius=args.radius
 
 seed_all(42)
 
@@ -69,7 +71,7 @@ print("defining estimators ...", flush=True)
 
 input_size = len(X_train[0])
 
-model_1 = PartialInputModel(
+model_1 = PartialInputNetwork(
     input_size=input_size - 1,
     model = BasicNetwork(
         input_size=input_size - 1,
@@ -79,18 +81,19 @@ model_1 = PartialInputModel(
         learning_rate=learning_rate
     ) 
 ) 
-model_1.set_name("embeddings only")
+model_1.set_name("embeddings_only")
 model_1.set_verbose()
 
 
-model_2 = BasicNetwork(
+model_2 = BypassedInputsNetwork(
     input_size=input_size,
     epochs=epochs,
     batch_size=batch_size,
     hidden_sizes=hidden_layers,
-    learning_rate=learning_rate
+    learning_rate=learning_rate,
+    bypassed_inputs=1
 )
-model_2.set_name("protrusion in first layer")
+model_2.set_name("protrusion_in_last_layer")
 model_2.set_verbose()
 
 scores = {}
