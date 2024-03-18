@@ -1,6 +1,9 @@
 import json
 import os
 import sys
+
+from data_prep.file_cache import use_cache
+from data_prep.pdb_files_db import Chain3dStructure, PdbFilesDb
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import config.config as config
 from typing import Any, Callable, Dict, List, Union
@@ -13,7 +16,8 @@ all_ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG
 class ChainRecord:
     def __init__(self, csv_line: str, 
                  embedding_folder = None,
-                 protrusion_data = None):
+                 protrusion_data = None,
+                 pdb_db: PdbFilesDb = None):
         cols = ['id', 'chain', '<col_2>', 'ligand', 'binding sights', 'sequence'] 
 
         self.__original_line = csv_line
@@ -27,6 +31,9 @@ class ChainRecord:
         self.__embedding_folder = embedding_folder
         self.__embeddings_data = None
         self.__protrusion_record = self.__load_protrusion_record(protrusion_data)
+
+        self.__pdb_db = pdb_db
+        self.__chain_structure = None
 
     def protein_id(self) -> str:
         return self.__data['id'].lower()
@@ -113,10 +120,15 @@ class ChainRecord:
         return dist_from_3d_sequence == 0
 
     def get_lev_distance_of_3d_sequence_and_sequence(self) -> Union[int, None]:
-        if self.__protrusion_record is None:
-            return None
+        if self.__pdb_db is not None:
+            with use_cache(self.get_chain_structure()) as chain_structure:
+                try:
+                    _3d_structure_sequence = chain_structure.compute_sequence()
+                except:
+                    print ('prot: ', self.full_id())
 
-        _3d_structure_sequence = self.__protrusion_record['sequence']
+        elif self.__protrusion_record is not None:
+            _3d_structure_sequence = self.__protrusion_record['sequence']
 
         return lev_distance(_3d_structure_sequence, self.sequence())
 
@@ -125,6 +137,15 @@ class ChainRecord:
             return None
         
         return self.__protrusion_record['origin_file']
+
+    def get_chain_structure(self, loaded=False) -> Chain3dStructure:
+        if self.__chain_structure is None:
+            self.__chain_structure = self.__pdb_db.get_chain_structure(self.protein_id(), self.chain_id())
+
+        if loaded:
+            self.__chain_structure.load(preferred_sequence=self.sequence())
+
+        return self.__chain_structure
 
     def __load_protrusion_record(self, protrusion_data):
         if protrusion_data is None:
@@ -186,13 +207,14 @@ class ProteinRecord:
 
 class LigandDataset:
     def __init__(self, ligand, 
-                 sequences_folder, protrusion_data, embedding_folder):
+                 sequences_folder, protrusion_data, embedding_folder, pdb_db):
         self.ligand = ligand.upper()
         
         self.__training_data = []
         self.__testing_data = []
         self.__protrusion_data = protrusion_data
         self.__embedding_folder = embedding_folder
+        self.__pdb_db = pdb_db
 
         self.__load_all_data(sequences_folder)
 
@@ -228,7 +250,8 @@ class LigandDataset:
     def __construct_chain_record(self, record_line):
         return ChainRecord(record_line,
                            embedding_folder=self.__embedding_folder,
-                           protrusion_data=self.__protrusion_data)
+                           protrusion_data=self.__protrusion_data,
+                           pdb_db=self.__pdb_db)
     
     def get_train_test_data(self, accessors, filters=[]):
         test, train = self.testing(), self.training()
@@ -269,9 +292,13 @@ class SeqDatasetDb:
         self.__sequences_folder = sequences_folder
         self.__protrusion_data = None
         self.__embedding_folder = embeddings_folder
+        self.__pdb_db = None
 
     def get_dataset_for(self, ligand) -> LigandDataset:
         return self.__construct_ligand_ds(ligand)
+    
+    def set_pdb_db(self, pdb_db: PdbFilesDb):
+        self.__pdb_db = pdb_db
     
     def load_protrusion_data_file(self, file_path):
         with open(file_path, 'r') as file:
@@ -303,7 +330,8 @@ class SeqDatasetDb:
         return LigandDataset(ligand,
                              sequences_folder=self.__sequences_folder,
                              embedding_folder=self.__embedding_folder,
-                             protrusion_data=self.__protrusion_data)
+                             protrusion_data=self.__protrusion_data,
+                             pdb_db=self.__pdb_db)
 
 class Helpers: 
     @staticmethod
@@ -384,5 +412,60 @@ class DataAccessors:
                 result = np.column_stack((result, protrusion))
 
             return result
-
         return get_protrusion
+
+    @staticmethod
+    def neighborhood_embeddings(embedder, neighbors_count: int) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        
+        def get_neighborhood_embeddings(chain: ChainRecord):
+            chain_structure = chain.get_chain_structure(loaded=False)
+            
+            # cache is full this is not needed
+            # chain_structure.load(preferred_sequence=chain.sequence())
+
+            embeddings = chain.embeddings(embedder)
+            extended_embeddings = []  
+
+            with use_cache(chain_structure) as cached_chain_structure:
+                for i in range(cached_chain_structure.get_residue_count()):
+                    neighbors = cached_chain_structure.get_nearest_residue_indexes(i)[:neighbors_count]
+
+                    extended_embeddings.append(
+                        np.array([embeddings[index] for index in neighbors]).flatten()
+                    )
+
+            return np.array(extended_embeddings)
+
+        return get_neighborhood_embeddings
+    
+    @staticmethod
+    def average_neighborhood_embeddings(embedder, neighbors_count: int) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        
+        def get_neighborhood_embeddings(chain: ChainRecord):
+            chain_structure = chain.get_chain_structure(loaded=False)
+            
+            # cache is full this is not needed
+            # chain_structure.load(preferred_sequence=chain.sequence())
+
+            embeddings = chain.embeddings(embedder)
+            extended_embeddings = []  
+
+            with use_cache(chain_structure) as cached_chain_structure:
+                for i in range(cached_chain_structure.get_residue_count()):
+                    neighbors = cached_chain_structure.get_nearest_residue_indexes(i)[:neighbors_count]
+
+                    sum_embeddings = embeddings[neighbors[0]]
+
+                    for neighbor_index in neighbors[1:]:
+                        sum_embeddings = sum_embeddings + embeddings[neighbor_index]
+
+                    sum_embeddings = sum_embeddings / neighbors_count
+
+
+                    extended_embeddings.append(
+                        sum_embeddings
+                    )
+
+            return np.array(extended_embeddings)
+
+        return get_neighborhood_embeddings

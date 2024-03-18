@@ -10,6 +10,7 @@ class FileCache:
     def __init__(self, file_key, data_folder):
         self.file = os.path.join(data_folder, f'{file_key}.json')
         self.cache = None
+        self.cache_modified = False
 
         self.load()
     
@@ -17,7 +18,10 @@ class FileCache:
         try: 
             with open(self.file, 'r') as file:
                 self.cache = json.load(file)
-        except:
+        except FileNotFoundError:
+            self.cache = {}
+        except json.JSONDecodeError as json_error:
+            print("\nError parsing JSON:", json_error, '\n')
             self.cache = {}
 
     def get_value_for(self, method_name, *args, **kwargs):
@@ -41,11 +45,20 @@ class FileCache:
 
         cache_record[key_to_cache] = value
 
+        self.cache_modified = True
+
     def flush(self):
+        if not self.cache_modified:
+            return
+
         result = pprint.pformat(self.cache, compact=True, width=150).replace("'",'"')
         with open(self.file, 'w') as file:
             file.write(result)
-        
+
+        # safer but less readable dump
+        # with open(self.file, "w") as f:
+        #     json.dump(self.cache, f, indent=2)
+
     def free_memory(self):
         self.cache = None
 
@@ -54,14 +67,14 @@ class FileCache:
         kwargs_str = ', '.join(
             sorted([f"{key}={repr(value)}" for key, value in kwargs.items()])
         )
-        return f"{args_str}, {kwargs_str}"
+        return f"{args_str}, {kwargs_str}".replace('"', '').replace("'", '')
                 
 T = TypeVar('T')
 def use_cache(object: T, data_folder=config.cache_folder) -> T:
     cache = FileCache(file_key=object.__cache_key__, data_folder=data_folder)
 
     class CachedCalls:
-        def __enter__(self):
+        def __enter__(self) -> T:
             return self
         
         def __exit__(self, exc_type, exc_value, traceback):

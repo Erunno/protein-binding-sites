@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import re
@@ -9,6 +10,12 @@ import pdb_files_db
 import traceback
 import datasets_db
 from datetime import timedelta
+
+# python3 /home/brabecm4/diplomka/protein-binding-sites/data_prep/pdb_files_tests.py
+
+parser = argparse.ArgumentParser(description='Test pdb db')
+parser.add_argument('--tests', type=str, nargs='+', help='List of tests to be run')
+args = parser.parse_args()
 
 # constant parameters
 
@@ -188,6 +195,30 @@ def check_residues_without_marked_alpha_carbon():
 
     return True, f'{chains_with_unmarked_alpha_carbon_count} chains has unmarked CA of which {valid_chains_with_unmarked_count} are valid chains (...which is within the threshold of {unmarked_alpha_carbon_count_threshold})'
 
+def check_protrusion_does_not_throw_an_error():
+    all_chains = chains_db.get_all_chain_records()
+    start_time = time.time()
+
+    for i, chain in enumerate(all_chains):
+        print(f'\r{BLUE}[ ] {nearest_residues_does_not_raise_an_error.__name__} ... testing chain {YELLOW}{i}{BLUE} {RESET}', end='', flush=True)
+        
+        chain_structure = pdb_db.get_chain_structure(chain.protein_id(), chain.chain_id())
+        chain_structure.load(preferred_sequence=chain.sequence())
+
+        residue_count = chain_structure.get_residue_count()
+
+        protrusion = chain_structure.get_protrusion_vector(radius=10)
+
+        if protrusion is None or residue_count != len(protrusion):
+            return False, f'Unexpected protrusion vector of length {len(protrusion)}, expected {residue_count}'
+
+        chain_structure.free_memory()
+
+    end_time = time.time()
+    elapsed_time_secs = end_time - start_time
+
+    return True, f'elapsed time: {timedelta(seconds=elapsed_time_secs)}'    
+
 # run test cases
 
 def _run(test_case):
@@ -203,7 +234,10 @@ def _run(test_case):
     else:
         print(f'\r{RED}[✘] {test_case.__name__}{RESET}{SPACE}')
         print(f'  Error: {message}')
-        
+
+def _skip(test_case):
+    print(f'{YELLOW}[ ] {test_case.__name__} {RESET}', flush=True)
+
 print(f'\n{BLUE}Running tests...{RESET}\n')
 
 all_symbols = globals()
@@ -214,7 +248,12 @@ tests = [
        func.__module__ == __name__ and
        not func.__name__.startswith('_')]
 
+test_to_be_run = args.tests or [t.__name__ for t in tests] 
+
 for test_case in tests:
-    _run(test_case)
+    if test_case.__name__ in test_to_be_run:
+        _run(test_case)
+    else:
+        _skip(test_case)
 
 print()

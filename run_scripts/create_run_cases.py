@@ -2,6 +2,7 @@ import json
 import os
 import argparse
 import os
+import random
 import signal
 import subprocess
 from itertools import product
@@ -22,7 +23,7 @@ def get_command(params):
     command = [
         'python',
         '/home/brabecm4/diplomka/protein-binding-sites/netws/network.v2.py',
-        '--tag', 'basic_v3',
+        '--tag', 'avrg_neighboring_emb_5',
         '--verbose', 'True',
         # '--use-simple-model', 'True',
         '--hidden-layers', *map(str, params['hidden_layers']),
@@ -43,6 +44,43 @@ def get_command(params):
 parameters_to_test = {
     # 'hidden_layers': [ [900, 500, 100, 30], [100, 50, 20], [400, 200, 50], [90, 20]],
     'hidden_layers': [
+        # [1024, 512, 512, 256],
+        # [1024, 512, 256, 32],
+        # [1024, 512, 512, 256, 64],
+        # [1024, 512, 256, 128, 128, 64],
+        # [1024, 512, 256, 128],
+        # [1024, 512, 128, 32],
+        # [2048, 512, 512, 256, 128],
+        # [2048, 512, 256, 128],
+        # [2048, 256, 256, 64],
+        # [2048, 256, 64, 32],
+        # [2048, 256, 32],
+        # [4096, 256, 256, 64],
+        # [1024, 256, 64],
+        # [4096, 2048, 1024, 512, 256, 128, 64, 32],
+        # [4096, 2048, 512, 256, 32],
+
+        # [1024, 512, 128, 32],
+        # [2048, 256, 128, 32],
+        # [2048, 256, 128],
+        # [1024, 256, 128],
+        # [2048, 1024, 512, 256],
+        # [2048, 1024, 512, 256],
+        # [8192, 2048, 1024, 512, 256],
+        # [512, 512, 512, 512],
+        # [256, 256, 128, 32],
+        # [512, 512, 512, 32],
+        # [512, 512, 32],
+        # [512, 256],
+        # [256, 64, 32],
+        # [256, 256, 128, 128],
+        # [256, 256, 32],
+        # [512, 512, 128, 128],
+        # [256, 32, 32],
+        # [256, 128, 32, 32],
+        # [512, 128, 128, 128],
+        # [512, 128, 128, 32],
+
   [512, 512, 32, 32],
   [256, 256, 256, 128],
   [512, 256, 128, 128],
@@ -129,6 +167,8 @@ commands = [get_command(param) for param in param_combinations]
 
 
 lines = [f'NOT_RUN;{command}' for command in commands]
+random.shuffle(lines)
+
 content = '\n'.join(lines)
 
 with open(out_file, 'w') as file:

@@ -123,8 +123,8 @@ def get_line_for_ligand(result_objects, ligand, embedders):
         [res['epoch'] for res in results],
         [res['learning_rate'] for res in results],
 
-        [ res['fname'] if len(res['fname']) < 10 else f'{res["fname"][:7]}...{res["fname"][-10:]}' 
-         for res in results]
+        # [ res['fname'] if len(res['fname']) < 10 else f'{res["fname"][:7]}...{res["fname"][-10:]}' 
+        [ res['fname'] for res in results]
     ]
 
     return columns

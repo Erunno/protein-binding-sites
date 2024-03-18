@@ -21,7 +21,8 @@ class Chain3dStructure:
             self.get_residue_count.__name__,
             self.get_nearest_residue_indexes.__name__,
             self.all_residues_has_alpha_carbon.__name__,
-            self.compute_sequence.__name__
+            self.compute_sequence.__name__,
+            self.get_protrusion_vector.__name__
         ]
 
         self.protein_id = protein_id
@@ -74,8 +75,11 @@ class Chain3dStructure:
 
     def get_nearest_residue_indexes(
             self, 
-            residue_index: int, n_nearest: int = 10,
-            distance_func='alpha atoms') -> List[int]:
+            residue_index: int, 
+            
+            # do not change these default values as some values may be stored in cache (alternatively delete cache)
+            n_nearest: int = 10,
+            distance_func='alpha_atoms') -> List[int]:
 
         if distance_func in DistancesCollection.names_to_functions:
             distance_func = DistancesCollection.names_to_functions[distance_func] 
@@ -113,6 +117,25 @@ class Chain3dStructure:
 
     def get_origin_filename(self):
         return self.structure_file
+
+    def get_protrusion_vector(
+            self, radius, 
+            # do not change this default value as some values may be stored in cache (alternatively delete cache)
+            protrusion_algorithm='atom_count_from_center_of_mass'):
+        
+        if protrusion_algorithm in ProtrusionFunctionsCollection.names_to_functions:
+            protrusion_algorithm = ProtrusionFunctionsCollection.names_to_functions[protrusion_algorithm] 
+
+        all_atoms = list(self._3d_chain.get_atoms())
+        ns = NeighborSearch(all_atoms)
+
+        protrusion = []
+
+        for residue in self.get_residue_list():
+            value = protrusion_algorithm(ns, residue, radius)
+            protrusion.append(value)
+
+        return protrusion
 
     @staticmethod
     def get_chain_residue_list(biopython_chain) -> List[Residue]:
@@ -228,10 +251,20 @@ class ResidueDistances:
 
         return sum((a - b) * (a - b) for a, b in zip(coord_1, coord_2))
 
+class ProtrusionFunctions:
+    @staticmethod
+    def compute_neighboring_atoms_from_center(ns, residue, radius):
+        center = residue.center_of_mass()
+        neighbors = ns.search(center=center, radius=radius, level='R') 
+        return len(neighbors)
 
 class DistancesCollection:
     names_to_functions = {
-        'alpha atoms': ResidueDistances.distance_between_alpha_atoms_sq
+        'alpha_atoms': ResidueDistances.distance_between_alpha_atoms_sq
     }
 
+class ProtrusionFunctionsCollection:
+    names_to_functions = {
+        'atom_count_from_center_of_mass': ProtrusionFunctions.compute_neighboring_atoms_from_center
+    }
         

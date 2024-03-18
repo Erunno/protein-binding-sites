@@ -9,6 +9,7 @@ import config.config as config
 from estimators.basic import BasicNetwork
 from estimators.bypass import BypassedInputsNetwork
 import data_prep.datasets_db as dataset
+import data_prep.pdb_files_db as pdb_data
 from evaluator import get_statistics
 import string
 from seed_network import seed_all 
@@ -49,14 +50,21 @@ result_file_name = f'{args.ligand}_hl{"-".join([str(n) for n in args.hidden_laye
 
 print ('loading data ...', flush=True)
 
+pdb_db = pdb_data.PdbFilesDb()
+
 db = dataset.SeqDatasetDb()
+db.set_pdb_db(pdb_db)
+
 ds = db.get_dataset_for(args.ligand)
 
 print ('defining training and testing data ...', flush=True)
 
 X_train, y_train, X_test, y_test = ds.get_train_test_data(
-    [dataset.DataAccessors.embeddings(args.embedder),
-     dataset.DataAccessors.biding_sights_vect()]
+    [dataset.DataAccessors.average_neighborhood_embeddings(args.embedder, 5)],
+    # [dataset.DataAccessors.neighborhood_embeddings(args.embedder, 5)],
+    # [dataset.DataAccessors.embeddings(args.embedder)],
+
+     filters=[dataset.Helpers.filter_chains_with_valid_protrusion]
 )
 
 print ('initializing network ...', flush=True)
