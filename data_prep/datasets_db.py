@@ -14,11 +14,15 @@ from Levenshtein import distance as lev_distance
 all_ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
 
 class ChainRecord:
+    pass
+
+class ChainRecord:
     def __init__(self, csv_line: str, 
                  embedding_folder = None,
                  protrusion_data = None,
                  pdb_db: PdbFilesDb = None):
-        cols = ['id', 'chain', '<col_2>', 'ligand', 'binding sights', 'sequence'] 
+        
+        cols = ['id', 'chain', 'binding_sight_ID', 'ligand', 'binding_sights', 'sequence'] 
 
         self.__original_line = csv_line
         
@@ -35,6 +39,8 @@ class ChainRecord:
         self.__pdb_db = pdb_db
         self.__chain_structure = None
 
+        self.__binding_sights = [self.__data['binding_sights']]
+
     def protein_id(self) -> str:
         return self.__data['id'].lower()
 
@@ -43,9 +49,18 @@ class ChainRecord:
 
     def chain_id(self) -> str:
         return self.__data['chain'].upper()
+    
+    def add_another_binding_sight_from(self, chain: ChainRecord):
+        self.__binding_sights.append(chain.__data['binding_sights'])
 
     def binding_sights(self) -> ndarray[int]:
-        sights_str = self.__data['binding sights'].split(' ')
+        return self.__compute_biding_sights(' '.join(self.__binding_sights))
+    
+    def original_binding_sights(self):
+        return self.__compute_biding_sights(self.__data['binding_sights'])
+
+    def __compute_biding_sights(self, bindings_string: str):
+        sights_str = bindings_string.split(' ')
 
         binding_indexes = [int(sight[1:]) - 1 for sight in sights_str]
         binding_residues = [sight[0] for sight in sights_str]
@@ -58,6 +73,7 @@ class ChainRecord:
             binding_flags[binding_idx] = 1
 
         return np.array(binding_flags)
+
 
     def ligand(self) -> str:
         return self.__data['ligand']
@@ -89,24 +105,18 @@ class ChainRecord:
         return self.__original_line
     
     def protrusion_vector_for(self, radius) -> Union[List[int], None]:
-        if self.__protrusion_record is None:
-            return None
-        
-        for radius_record in self.__protrusion_record['results']:
-            if radius_record['radius'] == radius:
-                return np.array(radius_record['protrusion'])
-            
-        return None
+        with use_cache(self.get_chain_structure()) as chain_structure:
+            return np.array(chain_structure.get_protrusion_vector(radius=radius))
     
-    def get_all_protrusion_radii(self) -> List[float]:
-        if self.__protrusion_record is None:
-            return []
+    # def get_all_protrusion_radii(self) -> List[float]:
+    #     if self.__protrusion_record is None:
+    #         return []
         
-        all_radii = [ radius_record['radius']
-                      for radius_record 
-                      in self.__protrusion_record['results'] ]
+    #     all_radii = [ radius_record['radius']
+    #                   for radius_record 
+    #                   in self.__protrusion_record['results'] ]
 
-        return list(all_radii)
+    #     return list(all_radii)
 
     def has_protrusion_record(self) -> bool:
         return self.__protrusion_record is not None
@@ -146,6 +156,10 @@ class ChainRecord:
             self.__chain_structure.load(preferred_sequence=self.sequence())
 
         return self.__chain_structure
+    
+    def get_SASA_vector(self):
+        with use_cache(self.get_chain_structure()) as chain_structure:
+            return chain_structure.get_SASA_vector()
 
     def __load_protrusion_record(self, protrusion_data):
         if protrusion_data is None:
@@ -212,6 +226,10 @@ class LigandDataset:
         
         self.__training_data = []
         self.__testing_data = []
+
+        self.__training_data_per_binding_sight = []
+        self.__testing_data_per_binding_sight = []
+        
         self.__protrusion_data = protrusion_data
         self.__embedding_folder = embedding_folder
         self.__pdb_db = pdb_db
@@ -223,6 +241,12 @@ class LigandDataset:
 
     def testing(self) -> List[ChainRecord]:
         return self.__testing_data
+
+    def training_per_binding_sight(self) -> List[ChainRecord]:
+        return self.__training_data_per_binding_sight
+
+    def testing_per_binding_sight(self) -> List[ChainRecord]:
+        return self.__testing_data_per_binding_sight
 
     def all(self) -> List[ChainRecord]:
         return self.__testing_data + self.__training_data
@@ -239,10 +263,22 @@ class LigandDataset:
             chain_records = [ self.__construct_chain_record(rec)
                               for rec in chain_records]
 
+            seen_chains = {}
+
+            for chain in chain_records:
+                id = chain.full_id()
+
+                if id in seen_chains:
+                    seen_chains[id].add_another_binding_sight_from(chain)
+                else:
+                    seen_chains[id] = chain
+
             if (subfolder == 'Training sets'):
-                self.__training_data = chain_records
+                self.__training_data = list(seen_chains.values())
+                self.__training_data_per_binding_sight = chain_records
             else:
-                self.__testing_data = chain_records
+                self.__testing_data = list(seen_chains.values())
+                self.__testing_data_per_binding_sight = chain_records
 
     def get_all_radii(self) -> List[float]:
         return Helpers.get_all_radii(self.all())
@@ -373,16 +409,16 @@ class Helpers:
         return np.array(results)
         
     
-    @staticmethod
-    def get_all_radii(chains: List[ChainRecord]):
-        all_radii = set(chains[0].get_all_protrusion_radii())
+    # @staticmethod
+    # def get_all_radii(chains: List[ChainRecord]):
+    #     all_radii = set(chains[0].get_all_protrusion_radii())
 
-        for chain in chains:
-            radii = set(chain.get_all_protrusion_radii())
+    #     for chain in chains:
+    #         radii = set(chain.get_all_protrusion_radii())
 
-            all_radii = all_radii.intersection(radii)
+    #         all_radii = all_radii.intersection(radii)
 
-        return sorted(all_radii)
+    #     return sorted(all_radii)
 
 class DataAccessors:
     @staticmethod
@@ -413,9 +449,21 @@ class DataAccessors:
 
             return result
         return get_protrusion
+    
+    @staticmethod
+    def SASA_vector() -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        def get_SASA_vector(chain: ChainRecord):
+            return np.array(chain.get_SASA_vector())
+
+        return get_SASA_vector
 
     @staticmethod
     def neighborhood_embeddings(embedder, neighbors_count: int) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
+        return DataAccessors.neighborhood_with_custom_embeddings(
+            embedder, transform_embeddings_func=None, neighbors_count=neighbors_count)
+    
+    @staticmethod
+    def neighborhood_with_custom_embeddings(embedder, transform_embeddings_func, neighbors_count: int) -> Callable[[ChainRecord], Union[ndarray[ndarray[float]], None]]:
         
         def get_neighborhood_embeddings(chain: ChainRecord):
             chain_structure = chain.get_chain_structure(loaded=False)
@@ -424,6 +472,10 @@ class DataAccessors:
             # chain_structure.load(preferred_sequence=chain.sequence())
 
             embeddings = chain.embeddings(embedder)
+            
+            if transform_embeddings_func is not None: 
+                embeddings = transform_embeddings_func(embeddings)
+
             extended_embeddings = []  
 
             with use_cache(chain_structure) as cached_chain_structure:

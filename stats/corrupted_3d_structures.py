@@ -4,6 +4,7 @@ import sys
 from typing import List
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import data_prep.datasets_db as datasets
+import data_prep.pdb_files_db as pdb_files_db
 
 RESET = '\033[0m'
 RED = '\033[91m'
@@ -11,16 +12,11 @@ GREEN = '\033[92m'
 YELLOW = '\033[93m'
 BLUE = '\033[94m'
 
-# python3 /home/brabecm4/diplomka/protein-binding-sites/stats/corrupted_3d_structures.py --protrusion-file /home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json
+# python3 /home/brabecm4/diplomka/protein-binding-sites/stats/corrupted_3d_structures.py
 
-parser = argparse.ArgumentParser(description='Show corrupted protrusion records stats')
-parser.add_argument('--protrusion-file', help='Specify input protrusion', required=True)
-
-args = parser.parse_args()
-protrusion_fname = args.protrusion_file
-
+pdb_db = pdb_files_db.PdbFilesDb()
 db = datasets.SeqDatasetDb()
-db.load_protrusion_data_file(protrusion_fname)
+db.set_pdb_db(pdb_db)
 
 all_ligands = datasets.SeqDatasetDb.all_ligands()
 

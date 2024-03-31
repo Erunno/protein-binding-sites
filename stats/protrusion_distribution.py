@@ -7,29 +7,25 @@ import numpy as np
 from numpy import ndarray
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import data_prep.datasets_db as datasets
+import data_prep.pdb_files_db as pdb_structures
 import config.config as config
 
 parser = argparse.ArgumentParser(description='Show corrupted protrusion records stats')
-parser.add_argument('--protrusion-file', help='Specify input protrusion', required=True)
+parser.add_argument('--out-graph-path', help='Specify output file', required=True)
 
-# python3 protrusion_distribution.py --protrusion-file /home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json
+# python3 /home/brabecm4/diplomka/protein-binding-sites/stats/protrusion_distribution.py --out-graph-path /home/brabecm4/diplomka/protein-binding-sites/data/graphs/binding_vs_non_binding.png
 
 args = parser.parse_args()
-protrusion_fname = args.protrusion_file
-
-def get_file_name_without_extension(file_path):
-    base_name = os.path.basename(file_path)
-    name, extension = os.path.splitext(base_name)
-    return name
 
 def load_histograms():
+    pdb_db = pdb_structures.PdbFilesDb()
     db = datasets.SeqDatasetDb()
-    db.load_protrusion_data_file(protrusion_fname)
+    db.set_pdb_db(pdb_db)    
 
     all_chains = db.get_all_chain_records()
     all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
 
-    all_radii = datasets.Helpers.get_all_radii(all_chains)
+    all_radii = list(np.arange(1.0, 10.5, 0.5))
 
     binding_sights = datasets.Helpers.concat_chain_data(
         datasets.DataAccessors.biding_sights_vect(),
@@ -94,7 +90,7 @@ def create_graph(histograms, all_radii):
     for ax in axes.flat:
         ax.legend()
 
-    plot_fname = f'binding_vs_non_binding_for-{get_file_name_without_extension(protrusion_fname)}.png'
+    plot_fname = args.out_graph_path
     plt.savefig(os.path.join(config.graphs_folder, plot_fname),
                 dpi=300, bbox_inches='tight')
 

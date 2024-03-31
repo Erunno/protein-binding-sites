@@ -39,7 +39,11 @@ def load_results_objects_from(folder, embedder_aliases = [], tags = []):
         file_path = os.path.join(folder, filename)
         if filename.endswith('.json'):
             with open(file_path, 'r') as file:
-                result = json.load(file)
+                try:
+                    result = json.load(file)
+                except:
+                    print (f'ERROR: cannot read file: {file_path}')
+                    exit(1)
 
                 result['file_name'] = filename
 
@@ -67,7 +71,7 @@ def get_all_tags(results):
     return get_all('result_tag', results)
 
 def get_the_highest_mcc_stat_within_the_result(result):
-    return max(result['all_stats'], key=lambda x: x['mcc'])
+    return max(result['all_stats'] + [result['final_stats']], key=lambda x: x['mcc'])
 
 def get_run_with_best_mcc(results):
     if (len(results) == 0):
@@ -82,31 +86,42 @@ def get_best_result_for_embedder(results, embedder):
 
     if best_run is None: 
         return {
-            'mcc': '---', 
+            'mcc val': '---', 
+            'mcc test': '---', 
             'fname': '---', 
             'layers': '---',
             'epoch': '---',
             'learning_rate': '---',
-            'tag': '---'
+            'tag': '---',
+            'radius': '---',
+            'threshold': '---'
         }
 
     # here more info about the best run can be extracted
     best_stat = get_the_highest_mcc_stat_within_the_result(best_run)
     best_mcc = best_stat['mcc']
     best_mcc_string = "{:.3f}".format(best_mcc)
-    
+    test_mcc_string = "{:.3f}".format(best_stat['test_data_stats']['mcc']) \
+        if 'test_data_stats' in best_stat else '---'
+
     layers = '-'.join([str(layer) for layer in best_run['hidden_layers']])
     epoch = str(best_stat['epochs'])
     learning_rate = str(best_run['learning_rate'])
     tag = best_run['result_tag']
 
+    radius = best_run['radius'] if 'radius' in best_run else '---'
+    threshold = best_stat['threshold'] if 'threshold' in best_stat else '---'
+
     return {
-        'mcc': best_mcc_string, 
+        'mcc val': best_mcc_string, 
+        'mcc test': test_mcc_string, 
         'fname': best_run['file_name'], 
         'layers': layers,
         'epoch': epoch,
         'learning_rate': learning_rate,
         'tag': tag,
+        'radius': radius,
+        'threshold': threshold
     }
 
 def get_line_for_ligand(result_objects, ligand, embedders):
@@ -117,11 +132,14 @@ def get_line_for_ligand(result_objects, ligand, embedders):
         ligand, 
         embedders, 
         
-        [res['mcc'] for res in results], 
+        [res['mcc val'] for res in results], 
+        [res['mcc test'] for res in results], 
         [res['tag'] for res in results], 
         [res['layers'] for res in results], 
         [res['epoch'] for res in results],
         [res['learning_rate'] for res in results],
+        [res['radius'] for res in results],
+        [res['threshold'] for res in results],
 
         # [ res['fname'] if len(res['fname']) < 10 else f'{res["fname"][:7]}...{res["fname"][-10:]}' 
         [ res['fname'] for res in results]
@@ -135,7 +153,7 @@ def get_comparison_line_for_ligand(results_by_tags, ligand, tags, embedders):
         results_for_ligand = [res for res in result_objects if res['ligand'] == ligand]
         results = [get_best_result_for_embedder(results_for_ligand, e) for e in embedders]
 
-        return [ res['mcc'] for res in results ]
+        return [ res['mcc test'] for res in results ]
     
     return [
         ligand, embedders, *[ get_tag_mcc_values(tag) for tag in tags ]
@@ -152,7 +170,7 @@ if display_result_table:
     ligands = get_all_ligands(results)
 
     table = [ get_line_for_ligand(results, ligand, embedders) for ligand in ligands]
-    header = ['ligand', 'embedder', 'mcc', 'tag', 'layers', 'epoch', 'learning rate', 'file name']
+    header = ['ligand', 'embedder', 'mcc val', 'mcc test', 'tag', 'layers', 'epoch', 'learning rate', 'radius', 'threshold', 'file name']
 
 if compare_results:
     all_results_in_folder = load_results_objects_from(results_folder, embedder_aliases) 

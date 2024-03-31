@@ -89,12 +89,29 @@ def estimate_to_end(done, total):
 print(f'{YELLOW}Running methods...{RESET}')
 
 def run_functions_to_cache(chain_structure: pdb_files_db.Chain3dStructure):
+
+    #################
+    # residue count #
+    #################
+
     residue_count = chain_structure.get_residue_count()
+
+    ####################
+    # nearest residues #
+    ####################
 
     for res_i in range(residue_count):
         nearest = chain_structure.get_nearest_residue_indexes(res_i)
 
+    ############
+    # sequence #
+    ############
+        
     sequence = chain_structure.compute_sequence()
+
+    ##############
+    # protrusion #
+    ##############
 
     for radius in protrusion_radii:
 
@@ -107,7 +124,13 @@ def run_functions_to_cache(chain_structure: pdb_files_db.Chain3dStructure):
             protrusion_vector = chain_structure.get_protrusion_vector(
                 radius=radius,
                 protrusion_algorithm=algorithm
-            ) 
+            )
+
+    ###############
+    # SASA vector #
+    ###############
+            
+    SASA_vector = chain_structure.get_SASA_vector()
 
 for i, chain in enumerate(all_chains):
     print(f'\r{BLUE}[{chain.full_id():5}] computing chain {YELLOW}{i + 1:4}{BLUE} / {YELLOW}{len(all_chains)}{BLUE} ... remaining: {estimate_to_end(i, len(all_chains))}' + \

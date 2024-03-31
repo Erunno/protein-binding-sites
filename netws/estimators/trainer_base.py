@@ -1,11 +1,13 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.metrics import matthews_corrcoef
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.init as init
 from sklearn.preprocessing import StandardScaler
+from focal_loss import FocalLoss
 
 loading_bar_width = 25
 UP_char = "\033[A"
@@ -17,7 +19,11 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         
         self.model = None
         self.optimizer = None
+
+        # self.loss_fn = FocalLoss(alpha=1, gamma=2)
         self.criterion = nn.BCELoss()
+        # self.criterion = None
+
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
@@ -27,6 +33,7 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         self.epoch_callback = None
         self.name = "BasicNetwork"
         self.verbose = False
+        self.best_threshold = None
 
     def set_name(self, name):
         self.name = name
@@ -41,6 +48,7 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         self.epoch_callback = callback
 
     def fit(self, X, y):
+        orig_X = X
         if (self.verbose):
             print(f'info ({self.name}): fitting...', flush=True)
 
@@ -67,6 +75,12 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         if (self.verbose):
             print('')
 
+        # weight = self._calculate_pos_weight(y)
+        # weight = 3
+        # # print ('w =', weight)
+        # self.criterion = nn.BCEWithLogitsLoss(
+        #     pos_weight=torch.tensor(weight))
+
         # Training loop
         for epoch in range(self.epochs):
             if (self.verbose):
@@ -88,11 +102,29 @@ class TrainerBase(BaseEstimator, RegressorMixin):
 
             if self.epoch_callback is not None:
                 self.epoch_callback(epoch, loss, self)
-        
+
+        self.optimize_threshold_for_mcc(orig_X, y)
 
         return self
+    
+    def optimize_threshold_for_mcc(self, X, y):
+        y_pred_raw = self.predict_raw(X)
+        best_mcc = -1
+
+        for threshold in np.arange(0.0, 1.0, 0.05):
+            pred = (np.array(y_pred_raw) >= threshold).astype(int)
+            mcc = matthews_corrcoef(y, pred)
+
+            if mcc > best_mcc:
+                best_mcc = mcc
+                self.best_threshold = threshold
 
     def predict(self, X):
+        predictions = self.predict_raw(X)
+
+        return (np.array(predictions) >= self.best_threshold).astype(int)
+
+    def predict_raw(self, X):
         if (self.verbose):
             print(f'info ({self.name}): predicting...', flush=True)
 
@@ -105,7 +137,7 @@ class TrainerBase(BaseEstimator, RegressorMixin):
 
         # Make predictions
         with torch.no_grad():
-            predictions = self.model(X.to(self.device))[:, 0].cpu().round()
+            predictions = self.model(X.to(self.device))[:, 0].cpu()
 
         return predictions
 
@@ -119,4 +151,10 @@ class TrainerBase(BaseEstimator, RegressorMixin):
 
     def _get_model_to_train(self):
         raise Exception('Not implemented - should be implemented by the child class')
+
+    def _calculate_pos_weight(self, y):
+        class_counts = np.bincount(np.array(y).round())
+        neg_count = class_counts[0]
+        pos_count = class_counts[1]
+        return (neg_count / pos_count)
     

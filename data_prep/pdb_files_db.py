@@ -9,6 +9,7 @@ from Bio.PDB.Residue import Residue
 from Bio.PDB.Structure import Structure
 from Bio.PDB.NeighborSearch import NeighborSearch
 from Levenshtein import distance as lev_distance
+from Bio.PDB.SASA import ShrakeRupley
 
 class Chain3dStructure:
     def __init__(self, 
@@ -22,7 +23,8 @@ class Chain3dStructure:
             self.get_nearest_residue_indexes.__name__,
             self.all_residues_has_alpha_carbon.__name__,
             self.compute_sequence.__name__,
-            self.get_protrusion_vector.__name__
+            self.get_protrusion_vector.__name__,
+            self.get_SASA_vector.__name__
         ]
 
         self.protein_id = protein_id
@@ -136,6 +138,14 @@ class Chain3dStructure:
             protrusion.append(value)
 
         return protrusion
+    
+    def get_SASA_vector(self):
+        sr = ShrakeRupley()
+        sr.compute(self._3d_chain, level="R")
+        
+        return [
+            res.sasa for res in self.get_residue_list()
+        ]
 
     @staticmethod
     def get_chain_residue_list(biopython_chain) -> List[Residue]:

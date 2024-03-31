@@ -219,6 +219,31 @@ def check_protrusion_does_not_throw_an_error():
 
     return True, f'elapsed time: {timedelta(seconds=elapsed_time_secs)}'    
 
+def check_SASA_vector_does_not_throw_an_error():
+    all_chains = chains_db.get_all_chain_records()
+    start_time = time.time()
+
+    for i, chain in enumerate(all_chains):
+        print(f'\r{BLUE}[ ] {nearest_residues_does_not_raise_an_error.__name__} ... testing chain {YELLOW}{i}{BLUE} {RESET}', end='', flush=True)
+        
+        chain_structure = pdb_db.get_chain_structure(chain.protein_id(), chain.chain_id())
+        chain_structure.load(preferred_sequence=chain.sequence())
+
+        residue_count = chain_structure.get_residue_count()
+
+        SASA_vector = chain_structure.get_SASA_vector()
+
+        if SASA_vector is None or residue_count != len(SASA_vector):
+            return False, f'Unexpected SASA vector of length {len(SASA_vector)}, expected {residue_count}'
+
+        chain_structure.free_memory()
+
+    end_time = time.time()
+    elapsed_time_secs = end_time - start_time
+
+    return True, f'elapsed time: {timedelta(seconds=elapsed_time_secs)}'    
+
+
 # run test cases
 
 def _run(test_case):

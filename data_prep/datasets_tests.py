@@ -1,7 +1,13 @@
 import re
 
+import os
+import sys
+from typing import List
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+
 import numpy as np
 import datasets_db
+import pdb_files_db
 import traceback
 
 # constant parameters
@@ -9,6 +15,7 @@ path_to_protrusion_file = '/home/brabecm4/diplomka/protein-binding-sites/data/3d
 path_to_embeddings_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/embedded_sequences'
 path_to_sequences_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/orig/yu_sequences'
 tested_embedder = 'ESM'
+all_protrusion_radii = list(np.arange(1.0, 10.5, 0.5))
 
 # constants
 ALL_LIGANS = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
@@ -18,7 +25,7 @@ RED = '\033[91m'
 GREEN = '\033[92m'
 YELLOW = '\033[93m'
 BLUE = '\033[94m'
-SPACE = '                       '
+SPACE = '                            '
 
 # init database
 
@@ -26,6 +33,9 @@ print(f'{YELLOW}Initializing...')
 db = datasets_db.SeqDatasetDb(
     sequences_folder=path_to_sequences_folder, 
     embeddings_folder=path_to_embeddings_folder)
+
+pdb_db = pdb_files_db.PdbFilesDb()
+db.set_pdb_db(pdb_db) 
 
 print(f'Loading protrusion...{RESET}')
 db.load_protrusion_data_file(path_to_protrusion_file)
@@ -105,6 +115,35 @@ def full_id_has_correct_format():
         
     return True, None
 
+def binding_sights_are_merged_correctly_from_all_records(): 
+    for ligand in datasets_db.all_ligands:
+        ds = db.get_dataset_for(ligand)
+
+        chains_per_binding_sight = ds.testing_per_binding_sight() + ds.training_per_binding_sight()
+
+        aggregated_chains = {}
+        for chain in chains_per_binding_sight:
+            if chain.full_id() in aggregated_chains:
+                aggregated_chains[chain.full_id()].append(chain)
+            else:
+                aggregated_chains[chain.full_id()] = [chain]
+
+        all_chains = ds.testing() + ds.training()
+        
+        for chain in all_chains:
+            aggr_chains: List[datasets_db.ChainRecord] = aggregated_chains[chain.full_id()]
+            binding_sights = np.array([0] * len(chain.sequence()))
+
+            for ch in aggr_chains:
+                binding_sights = binding_sights | ch.original_binding_sights()
+
+            binding_sights_from_ds = chain.binding_sights()
+
+            if np.any(binding_sights != binding_sights_from_ds):
+                return False, f'Unexpected binding sights -- lig: {ligand}, prot: {chain.full_id()}'
+    
+    return True, None
+
 def there_are_some_chains_with_protrusion_records():
     all_chains = db.get_all_chain_records()
     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
@@ -119,7 +158,7 @@ def protrusion_radii_are_correct():
     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
 
     for chain in all_chains:
-        radii = chain.get_all_protrusion_radii()
+        radii = all_protrusion_radii
 
         if radii is None or len(radii) == 0:
             return False, f'Unexpected radii list: "{radii}"'      
@@ -145,8 +184,10 @@ def protrusion_does_not_throw_exception():
     all_chains = db.get_all_chain_records()
     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
 
-    for chain in all_chains:
-        radii = chain.get_all_protrusion_radii()
+    for i, chain in enumerate(all_chains):
+        print(f'\r {BLUE} {protrusion_does_not_throw_exception.__name__} ... {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
+
+        radii = all_protrusion_radii
 
         for r in radii: 
             protrusion = chain.protrusion_vector_for(r)
@@ -156,19 +197,19 @@ def protrusion_does_not_throw_exception():
 
     return True, None
 
-def all_radii_function_on_db_returns_correct_value():
-    ligand_ds = db.get_dataset_for('AMP')
-    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(ligand_ds.all()) 
+# def all_radii_function_on_db_returns_correct_value():
+#     ligand_ds = db.get_dataset_for('AMP')
+#     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(ligand_ds.all()) 
 
-    expected_all_radii = sorted(all_chains[0].get_all_protrusion_radii())
-    actual_all_radii = ligand_ds.get_all_radii()
+#     expected_all_radii = sorted(all_chains[0].get_all_protrusion_radii())
+#     actual_all_radii = ligand_ds.get_all_radii()
 
-    are_same = all(x == y for x, y in zip(expected_all_radii, actual_all_radii))
+#     are_same = all(x == y for x, y in zip(expected_all_radii, actual_all_radii))
 
-    if not are_same:
-        return False, f'Get all radii failed - expected {expected_all_radii}, got {actual_all_radii}'
+#     if not are_same:
+#         return False, f'Get all radii failed - expected {expected_all_radii}, got {actual_all_radii}'
 
-    return True, None
+#     return True, None
 
 def most_of_the_records_matches_protrusion_sequence():
     max_invalid_percent = 0.02
@@ -202,12 +243,14 @@ def data_accessor_for_binding_sights_works():
 
 def data_accessor_for_protrusion_works():
     all_chains = db.get_all_chain_records()
-    binding_sights_accessor = datasets_db.DataAccessors.protrusion(1, 2, 4)
+    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
+
+    binding_sights_accessor = datasets_db.DataAccessors.protrusion(1.0, 2.0, 4.0)
 
     for chain in all_chains:
-        prot1 = chain.protrusion_vector_for(1)
-        prot2 = chain.protrusion_vector_for(2)
-        prot4 = chain.protrusion_vector_for(4)
+        prot1 = chain.protrusion_vector_for(1.0)
+        prot2 = chain.protrusion_vector_for(2.0)
+        prot4 = chain.protrusion_vector_for(4.0)
 
         expected = np.array([[prot1[i], prot2[i], prot4[i]] for i in range(len(prot1))])
         actual = binding_sights_accessor(chain)
@@ -254,14 +297,11 @@ def concat_chain_data_works():
 def can_load_all_embeddings():
     all_chains = db.get_all_chain_records()
 
-    i = 0
-    for chain in all_chains:
+    for i, chain in enumerate(all_chains):
         embeddings = chain.embeddings(tested_embedder)
         expected_len = len(chain.sequence())
 
-        i += 1
-        if i % 20 == 0:
-            print(f'\r  {BLUE}checking embeddings - {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
+        print(f'\r  {BLUE} {can_load_all_embeddings.__name__} {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
 
         if embeddings is None or len(embeddings) != expected_len:
             return False, f'Unexpected embeddings: len={len(embeddings)} should be {expected_len} \n"{embeddings}"'
