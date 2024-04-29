@@ -67,5 +67,3 @@ def get_stats_for(ligand):
 all_ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
 for ligand in all_ligands:
     get_stats_for(ligand)
-
-# get_stats_for("AMP")

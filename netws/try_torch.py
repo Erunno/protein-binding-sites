@@ -7,4 +7,4 @@ try:
     print(f"CUDA GPUs count: {torch.cuda.device_count()}")
     print("Sample Tensor:", x)
 except ImportError:
-    print("PyTorch is not installed. Please install it using: pip install torch")
+    print("PyTorch is not installed. Install it using: pip install torch")

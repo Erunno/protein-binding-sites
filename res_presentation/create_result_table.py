@@ -3,6 +3,8 @@ import os
 import table_printer as printer
 import argparse
 
+# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/create_result_table.py --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs --embedder-aliases ProtT5:-T5 ProtBert:-BERT --compare --tag basic_v6 one_prot_fst_v3_c
+
 parser = argparse.ArgumentParser(description='Description of your script')
 parser.add_argument('--tag', nargs='+', help='List of tags')
 parser.add_argument('--embedder-aliases', nargs='+', help='List of embedders aliases e.g. ProtT5:-T5')

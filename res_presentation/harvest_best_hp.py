@@ -4,7 +4,7 @@ import table_printer as printer
 import argparse
 import results_loader 
 
-# python3 /home/brabecm4/diplomka/protein-binding-sites/res_presentation/harvest-best-hp.py --save-to /home/brabecm4/diplomka/protein-binding-sites/data/final_eval/best_HPs.json --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs
+# python3 /home/brabecm4/diplomka/protein-binding-sites/res_presentation/harvest_best_hp.py --save-to /home/brabecm4/diplomka/protein-binding-sites/data/final_eval/best_HPs.json --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs
 
 parser = argparse.ArgumentParser(description='Harvest best hyperparameters')
 parser.add_argument('--results-folder', help='Folder with results')

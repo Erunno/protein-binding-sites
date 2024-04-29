@@ -107,16 +107,6 @@ class ChainRecord:
     def protrusion_vector_for(self, radius) -> Union[List[int], None]:
         with use_cache(self.get_chain_structure()) as chain_structure:
             return np.array(chain_structure.get_protrusion_vector(radius=radius))
-    
-    # def get_all_protrusion_radii(self) -> List[float]:
-    #     if self.__protrusion_record is None:
-    #         return []
-        
-    #     all_radii = [ radius_record['radius']
-    #                   for radius_record 
-    #                   in self.__protrusion_record['results'] ]
-
-    #     return list(all_radii)
 
     def has_protrusion_record(self) -> bool:
         return self.__protrusion_record is not None
@@ -434,18 +424,6 @@ class Helpers:
             
         return np.array(results)
         
-    
-    # @staticmethod
-    # def get_all_radii(chains: List[ChainRecord]):
-    #     all_radii = set(chains[0].get_all_protrusion_radii())
-
-    #     for chain in chains:
-    #         radii = set(chain.get_all_protrusion_radii())
-
-    #         all_radii = all_radii.intersection(radii)
-
-    #     return sorted(all_radii)
-
 class DataAccessors:
     @staticmethod
     def biding_sights_vect():
@@ -494,7 +472,7 @@ class DataAccessors:
         def get_neighborhood_embeddings(chain: ChainRecord):
             chain_structure = chain.get_chain_structure(loaded=False)
             
-            # cache is full this is not needed
+            # if cache is full this is not needed
             # chain_structure.load(preferred_sequence=chain.sequence())
 
             embeddings = chain.embeddings(embedder)
@@ -522,7 +500,7 @@ class DataAccessors:
         def get_neighborhood_embeddings(chain: ChainRecord):
             chain_structure = chain.get_chain_structure(loaded=False)
             
-            # cache is full this is not needed
+            # if cache is full this is not needed
             # chain_structure.load(preferred_sequence=chain.sequence())
 
             embeddings = chain.embeddings(embedder)

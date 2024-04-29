@@ -197,20 +197,6 @@ def protrusion_does_not_throw_exception():
 
     return True, None
 
-# def all_radii_function_on_db_returns_correct_value():
-#     ligand_ds = db.get_dataset_for('AMP')
-#     all_chains = datasets_db.Helpers.filter_chains_with_protrusion(ligand_ds.all()) 
-
-#     expected_all_radii = sorted(all_chains[0].get_all_protrusion_radii())
-#     actual_all_radii = ligand_ds.get_all_radii()
-
-#     are_same = all(x == y for x, y in zip(expected_all_radii, actual_all_radii))
-
-#     if not are_same:
-#         return False, f'Get all radii failed - expected {expected_all_radii}, got {actual_all_radii}'
-
-#     return True, None
-
 def most_of_the_records_matches_protrusion_sequence():
     max_invalid_percent = 0.02
 

@@ -20,13 +20,6 @@ YELLOW = '\033[93m'
 BLUE = '\033[94m'
 MAGENTA = '\033[95m'
 
-# RESET = ''
-# RED = ''
-# GREEN = ''
-# YELLOW = ''
-# BLUE = ''
-# MAGENTA = ''
-
 # python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag basic_v6 --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/final_runs 
 # python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag one_prot_fst_v3_c --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/final_runs 
 

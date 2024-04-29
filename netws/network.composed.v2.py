@@ -21,13 +21,13 @@ from seed_network import seed_all
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
 
+# srun -p gpu-short --gres=gpu:V100 -A nprg058s --cpus-per-task=4 --mem-per-cpu=32G python /home/brabecm4/diplomka/protein-binding-sites/netws/network.composed.v2.py --verbose True --seed 42 --learning-rate 0.01 --epochs 10 --batch-size 1000 --embedder ESM --epoch-stats-interval 10 --tag test --hidden-layers 256 256 256 32 --ligand FE --neighbors 3
+
 allowed_ligands = dataset.SeqDatasetDb.all_ligands()
 # allowed_embedder = ['BERT', 'ESM', 'T5']
 allowed_embedder = ['ESM']
 
 parser = argparse.ArgumentParser(description='Ligand binding sites neural network')
-
-# srun -p gpu-short --gres=gpu:V100 -A nprg058s --cpus-per-task=4 --mem-per-cpu=32G python /home/brabecm4/diplomka/protein-binding-sites/netws/network.composed.v2.py --verbose True --seed 42 --learning-rate 0.01 --epochs 10 --batch-size 1000 --embedder ESM --epoch-stats-interval 10 --tag test --hidden-layers 256 256 256 32 --ligand FE --neighbors 3
 
 parser.add_argument('--tag', type=str, help='Tag the final result', required=True)
 parser.add_argument('--ligand', type=str, choices=allowed_ligands, help='Name of the ligand')
@@ -40,11 +40,6 @@ parser.add_argument('--seed', type=int, help='Seed of random.')
 parser.add_argument('--neighbors', type=int, help='Seed of random.')
 parser.add_argument('--learning-rate', type=float, help='Learning rate')
 parser.add_argument('--verbose', type=bool, default=False, help='Print intermediate results.')
-# parser.add_argument('--use-simple-model', type=bool, default=False, help='Use simple sequential model.')
-# parser.add_argument('--protrusion-data-file', type=str, help='Path to protrusion data')
-# parser.add_argument('--pdb-mappings-fname', type=str, help='Path to mappings to pdb files')
-# parser.add_argument('--used-protrusion-radii', type=float, nargs='+', help='List of used radii for protrusion. (only those found in "--protrusion-data-file" can be specified)')
-
 
 args = parser.parse_args()
 print('args: ', args)

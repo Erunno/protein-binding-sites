@@ -20,9 +20,7 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         self.model = None
         self.optimizer = None
 
-        # self.loss_fn = FocalLoss(alpha=1, gamma=2)
         self.criterion = nn.BCELoss()
-        # self.criterion = None
 
         self.epochs = epochs
         self.batch_size = batch_size
@@ -52,10 +50,10 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         if (self.verbose):
             print(f'info ({self.name}): fitting...', flush=True)
 
-        # # Input validation
+        # Input validation
         X, y = check_X_y(X, y)
 
-        # # Standardize input data
+        # Standardize input data
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
 
@@ -145,10 +143,4 @@ class TrainerBase(BaseEstimator, RegressorMixin):
 
     def _get_model_to_train(self):
         raise Exception('Not implemented - should be implemented by the child class')
-
-    def _calculate_pos_weight(self, y):
-        class_counts = np.bincount(np.array(y).round())
-        neg_count = class_counts[0]
-        pos_count = class_counts[1]
-        return (neg_count / pos_count)
     

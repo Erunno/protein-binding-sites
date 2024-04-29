@@ -100,9 +100,6 @@ def plot_mcc_s(data):
     if best_runs_fnames:
         stats_of_best = [rec['all_stats'] + [rec['final_stats']] for rec in data if rec['file_name'] in best_runs_fnames]
 
-        best_test = np.array([np.array([0] + [stat['test_data_stats']['mcc'] for stat in stats]) for stats in stats_of_best])
-        best_validation = np.array([np.array([0] + [stat['mcc'] for stat in stats]) for stats in stats_of_best])
-
     ligands = list(set([rec['ligand'] for rec in data]))
     stats_per_ligand = { lig: [] for lig in ligands }
     for rec in data: 
@@ -114,22 +111,10 @@ def plot_mcc_s(data):
     mcc_s_test_all = [np.array([0] + [stat['test_data_stats']['mcc'] for stat in stats]) for stats in stats_of_all]
     mcc_s_test = np.array(mcc_s_test_all)
     
-    mcc_s_of_best_test = [np.array([0] + [stat['test_data_stats']['mcc'] for stat in stats]) for stats in stats_of_all]
-    mcc_s_of_best_validation = [np.array([0] + [stat['mcc'] for stat in stats]) 
-                                for stats in stats_of_all 
-                                ]
-
     all_mcc_s_color = 'blue'
     for mcc_s in mcc_s_test_all[:displayed_mcc_s_limit]:
         alpha = 1 / 50
         plt.plot(mcc_s, color=all_mcc_s_color, alpha=alpha)
-
-    # if best_runs_fnames:
-    #     for mcc_s in best_test[:displayed_mcc_s_limit]:
-    #         plt.plot(mcc_s, color='orange', alpha=1 / 50)
-
-    #     for mcc_s in best_validation[:displayed_mcc_s_limit]:
-    #         plt.plot(mcc_s, color='blue', alpha=1 / 50)
 
     mcc_s_per_lig_color = 'red'
     for ligand in ligands:
