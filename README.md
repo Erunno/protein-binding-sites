@@ -2,7 +2,7 @@
 
 This repository contains the code for the thesis completed at Charles University titled "*Using Combined Sequence and Structural Features to Predict Protein-Ligand Binding Sites*".
 
-## Folder Structure
+## Repository Structure
 
 The goal was not to implement a single monolith application. Instead, the repository contains an ensemble of scripts, each fulfilling distinct roles such as defining machine learning models, preparing data, and presenting results from actual experiments. The scripts are organized into function-based folders, each containing a README for detailed explanations. Below is a high-level overview:
 

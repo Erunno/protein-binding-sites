@@ -1,16 +1,22 @@
 #!/bin/bash
 
-total_proteins=5570
-batch_size=100
+#SBATCH -p gpu-short
+#SBATCH -A nprg058s
+#SBATCH --cpus-per-task=2
+#SBATCH --time=0-02:00:00
+#SBATCH --mem-per-cpu=4G
+#SBATCH --signal=B:USR1@30
+#SBATCH --output=/home/brabecm4/diplomka/protein-binding-sites/data/logs/pdb_cache_renew_%A_%a.out
 
-total_batches=$((total_proteins / batch_size + 1))
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 <start protein idx> <protein count>"
+  exit 1
+fi
 
-echo removing cache ...
-rm /home/brabecm4/diplomka/protein-binding-sites/data/cache_data/production/*
+source /home/brabecm4/diplomka/protein-binding-sites/python_envs/pytorch_envs/bin/activate
 
-echo launching $total_batches workers
+echo "launching worker..." 
 
-for ((i = 0; i < total_batches; i++)); do
-    start_idx=$((i * batch_size))
-    sbatch /home/brabecm4/diplomka/protein-binding-sites/run_scripts/run_pdb_cache_renew.sh "$start_idx" "$batch_size"
-done
+python3 /home/brabecm4/diplomka/protein-binding-sites/data_prep/pdb_files_refresh_cache.py --running-from-worker --start $1 --count $2
+
+echo "worker has ended"
