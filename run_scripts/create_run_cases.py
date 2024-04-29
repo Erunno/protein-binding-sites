@@ -8,6 +8,8 @@ import subprocess
 from itertools import product
 from multiprocessing import Pool, cpu_count, Manager
 
+import numpy as np
+
 seed = 42
 
 # python /home/brabecm4/diplomka/protein-binding-sites/run_scripts/create_run_cases.py --out-file /home/brabecm4/diplomka/protein-binding-sites/data/run_data/run_cases_output
@@ -24,9 +26,10 @@ def get_command(params):
 
     command = [
         'python',
-        '/home/brabecm4/diplomka/protein-binding-sites/netws/network.v2.py',
-        # '/home/brabecm4/diplomka/protein-binding-sites/netws/network.composed.py',
-        '--tag', 'protrusion_no_emb',
+        # '/home/brabecm4/diplomka/protein-binding-sites/netws/network.v2.py',
+        '/home/brabecm4/diplomka/protein-binding-sites/netws/network.composed.v2.py',
+        '--tag', f'nei_compr_{params["neighbors"]}_small_v4_c',
+        '--neighbors', str(params["neighbors"]),
         '--verbose', 'True',
         # '--use-simple-model', 'True',
         '--hidden-layers', *map(str, params['hidden_layers']),
@@ -50,6 +53,7 @@ def get_command(params):
 
 parameters_to_test = {
     # 'hidden_layers': [ [900, 500, 100, 30], [100, 50, 20], [400, 200, 50], [90, 20]],
+    'neighbors': [5, 3],
     'hidden_layers': [
         # [1024, 512, 512, 256],
         # [1024, 512, 256, 32],
@@ -89,19 +93,44 @@ parameters_to_test = {
 
         # [256, 32, 4],
         # [128, 32, 4],
-        [64, 32, 2],
-        [16, 2],
-        [8, 2],
+        # [64, 32, 2],
+        # [16, 2],
+        # [8, 2],
         # [256, 64, 2],
         # [512, 64, 4],
 
+        [256, 32],
+        [64, 32, 2],
+        [128, 16, 2],
+        [128, 16],
+        [128, 32],
+        [64, 32],
+        [64, 2],
+        [64, 32, 16],
+        [64, 32, 2],
+        [64, 16, 2],
+        [64, 16],
+        [64, 8],
+        [32, 16],
+        [32, 8],
+        [16, 8],
+        [16, 2],
+        [256],
+        [128],
+        [64],
+        [32],
+        [2],
+
+        # these are the best of basic
+        # [512],           
+        # [256, 128],          
+        # [128, 128, 32],       
+        # [256, 128, 128],      
+        # [512, 512, 256],      
+        # [512, 512, 128, 32],   
+        # [512, 256, 128, 128],  
+        # [512, 256, 256, 256],  
         
-        # these are the best of bests
-        # [256, 128],
-        # [512, 512, 32],
-        # [256, 128, 128],
-        # [256, 256, 256],
-        # [256, 128, 128, 32],
         
 #   [512, 512, 32, 32],
 #   [256, 256, 256, 128],
@@ -172,11 +201,11 @@ parameters_to_test = {
     'ligand': ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN'],
     # 'ligand': ['GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN' ], # just some of the ligands
     'learning_rate': [0.01, 0.001 , 0.0001],
-    # 'epochs': [20, 30],
     'epochs': [120],
     'batch_size': [1000],
     'epoch_stats_interval': [10],
     'embedder': ['ESM'],
+    # 'radius': list(np.arange(1.0, 10.5, 0.5)),
     # 'embedder': ['ESM', 'T5', 'BERT'],
 
     # for protrusion

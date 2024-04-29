@@ -69,10 +69,10 @@ print ('defining training and testing data ...', flush=True)
 
 X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
     [
-        # dataset.DataAccessors.embeddings(args.embedder),
+        dataset.DataAccessors.embeddings(args.embedder),
         
-        dataset.DataAccessors.neighborhood_embeddings(args.embedder, 5),
-        # dataset.DataAccessors.average_neighborhood_embeddings(args.embedder, 5),
+        # dataset.DataAccessors.neighborhood_embeddings(args.embedder, 3),
+        # dataset.DataAccessors.average_neighborhood_embeddings(args.embedder, 3),
 
         # dataset.DataAccessors.protrusion(1.0),
         # dataset.DataAccessors.protrusion(1.5),
@@ -89,11 +89,11 @@ X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
         # dataset.DataAccessors.protrusion(7.0),
         # dataset.DataAccessors.protrusion(7.5),
         # dataset.DataAccessors.protrusion(8.0),
-        # dataset.DataAccessors.protrusion(8.5),
+        dataset.DataAccessors.protrusion(8.5),
         # dataset.DataAccessors.protrusion(9.0),
         # dataset.DataAccessors.protrusion(9.5),
         # dataset.DataAccessors.protrusion(10.0),
-        # dataset.DataAccessors.protrusion(args.radius),
+        dataset.DataAccessors.protrusion(args.radius),
         
         # dataset.DataAccessors.SASA_vector(),
     ],
@@ -102,7 +102,7 @@ X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
 )
 
 X_train, X_validate, y_train, y_validate = train_test_split(
-    X_train_validate, y_train_validate, train_size=0.8)
+    X_train_validate, y_train_validate, train_size=0.8, random_state=args.seed)
 
 print ('initializing network ...', flush=True)
 

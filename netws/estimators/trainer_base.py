@@ -75,12 +75,6 @@ class TrainerBase(BaseEstimator, RegressorMixin):
         if (self.verbose):
             print('')
 
-        # weight = self._calculate_pos_weight(y)
-        # weight = 3
-        # # print ('w =', weight)
-        # self.criterion = nn.BCEWithLogitsLoss(
-        #     pos_weight=torch.tensor(weight))
-
         # Training loop
         for epoch in range(self.epochs):
             if (self.verbose):

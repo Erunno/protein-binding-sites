@@ -52,9 +52,16 @@ def _normalize(table):
     
     return normalized_stringified
 
+_color_strs = ['\033[0m','\033[90m' ,'\033[91m','\033[92m','\033[93m','\033[94m', '\033[95m']
+def displayed_len(str):
+    for color in _color_strs:
+        str = str.replace(color, '')
+    return len(str)
+
 def _get_maxes_by_columns(table):
+
     def get_max_for_sub_table(sub_table, column):
-        return max([len(row[column]) for row in sub_table])
+        return max([displayed_len(row[column]) for row in sub_table])
     
     def get_max_for_column(table, column):
         return max([
@@ -71,7 +78,7 @@ def _get_maxes_by_columns(table):
 
 def _print_sub_table(sub_table, columns_widths):
     def get_part(part, desired_width):
-        return part + ' ' * (desired_width - len(part))
+        return part + ' ' * (desired_width - displayed_len(part))
     
     def print_line(row):
         parts = [

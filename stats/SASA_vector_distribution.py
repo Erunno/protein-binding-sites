@@ -22,7 +22,7 @@ def load_histogram():
     db = datasets.SeqDatasetDb()
     db.set_pdb_db(pdb_db)    
 
-    all_chains = db.get_all_chain_records()
+    all_chains = db.get_all_chain_records_with_merged_binding_sites()
     all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
 
     binding_sights = datasets.Helpers.concat_chain_data(
@@ -48,20 +48,23 @@ def create_graph(histogram):
     alpha=1
     hist_type='step'
     
-    plt.hist(histogram['binding'], bins=bins, alpha=alpha, label='Binding', color='blue', density=True, histtype=hist_type)
-    plt.hist(histogram['non_binding'], bins=bins, alpha=alpha, label='Non binding', color='green', density=True, histtype=hist_type)
+    plt.hist(histogram['non_binding'], bins=bins, alpha=alpha, label='non-binding', color='orange', density=True, histtype=hist_type)
+    plt.hist(histogram['binding'], bins=bins, alpha=alpha, label='binding', color='blue', density=True, histtype=hist_type)
 
     # Add labels and title
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of SASA vectors')
+    plt.xlabel('Accessible Surface', fontsize=17)
+    plt.ylabel('Frequency', fontsize=17)
+    plt.title('SASA Distributions', fontsize=20)
 
     # Add legend
-    plt.legend()
+    plt.legend(fontsize=13)
+
+    plt.gca().set_xticks([])  # Hide x-axis numbers
+    plt.gca().set_yticks([])  # Hide y-axis numbers
 
     plot_fname = args.out_graph_path
     plt.savefig(os.path.join(config.graphs_folder, plot_fname),
-                dpi=300, bbox_inches='tight')
+                dpi=200, bbox_inches='tight')
 
 histogram = load_histogram()
 create_graph(histogram)

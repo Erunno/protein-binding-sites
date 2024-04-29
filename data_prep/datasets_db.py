@@ -280,6 +280,9 @@ class LigandDataset:
                 self.__testing_data = list(seen_chains.values())
                 self.__testing_data_per_binding_sight = chain_records
 
+        self.__training_data.sort(key=lambda ch: ch.full_id())
+        self.__testing_data.sort(key=lambda ch: ch.full_id())
+
     def get_all_radii(self) -> List[float]:
         return Helpers.get_all_radii(self.all())
     
@@ -341,6 +344,29 @@ class SeqDatasetDb:
             data = json.load(file)
 
         self.__protrusion_data = data
+
+    def get_all_chain_records_with_merged_binding_sites(self):
+        chains: List[ChainRecord] = []  
+
+        for ligand in all_ligands:
+            ds = self.__construct_ligand_ds(ligand)
+            chains = chains + ds.all()
+
+        dict: Dict[str, ChainRecord]= {}
+
+        for chain in chains:
+            id = chain.full_id()
+
+            if id in dict:
+                # sanity check
+                assert dict[id].sequence() == chain.sequence()
+
+                # merge the binding sites of both chains
+                chain.add_another_binding_sight_from(dict[id])
+
+            dict[id] = chain
+
+        return list(dict.values())
 
     def get_all_chain_records(self) -> List[ChainRecord]:
         chains: List[ChainRecord] = []  

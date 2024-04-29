@@ -10,6 +10,9 @@ import data_prep.datasets_db as datasets
 import data_prep.pdb_files_db as pdb_structures
 import config.config as config
 
+plt.rcParams['font.family'] = 'DejaVu Sans'
+plt.rcParams['font.size'] = 12
+
 parser = argparse.ArgumentParser(description='Show corrupted protrusion records stats')
 parser.add_argument('--out-graph-path', help='Specify output file', required=True)
 
@@ -22,10 +25,11 @@ def load_histograms():
     db = datasets.SeqDatasetDb()
     db.set_pdb_db(pdb_db)    
 
-    all_chains = db.get_all_chain_records()
+    all_chains = db.get_all_chain_records_with_merged_binding_sites()
     all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
 
-    all_radii = list(np.arange(1.0, 10.5, 0.5))
+    # all_radii = list(np.arange(1.0, 10.5, 0.5))
+    all_radii = [4.0, 6.0, 8.0, 10.0]
 
     binding_sights = datasets.Helpers.concat_chain_data(
         datasets.DataAccessors.biding_sights_vect(),
@@ -43,6 +47,7 @@ def load_histograms():
     histograms = []
 
     for radius in all_radii:
+        print('working on radius: ', radius)
         entire_protrusion = datasets.Helpers.concat_chain_data(
             datasets.DataAccessors.protrusion(radius),
             chains=all_chains
@@ -83,16 +88,16 @@ def create_graph(histograms, all_radii):
         x_values_non_binding = np.array(x_values) + bar_width / 2
 
         axes[i // 2, i % 2].bar(x_values_binding, binding_values, width=bar_width, color='blue', label='binding')
-        axes[i // 2, i % 2].bar(x_values_non_binding, non_binding_values, width=bar_width, color='orange', label='non binding')
+        axes[i // 2, i % 2].bar(x_values_non_binding, non_binding_values, width=bar_width, color='orange', label='non-binding')
 
-        axes[i // 2, i % 2].set_title(f"Radius {all_radii[i]}")
+        axes[i // 2, i % 2].set_title(f"Radius {all_radii[i]} Å", fontsize=44)
 
     for ax in axes.flat:
-        ax.legend()
+        ax.legend(fontsize=30)
 
     plot_fname = args.out_graph_path
     plt.savefig(os.path.join(config.graphs_folder, plot_fname),
-                dpi=300, bbox_inches='tight')
+                dpi=100, bbox_inches='tight')
 
 histograms, all_radii = load_histograms()
 create_graph(histograms, all_radii)
