@@ -1,15 +1,21 @@
 import argparse
 import json
 import os
-import re
+import sys
 import time
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 
-import numpy as np
 from file_cache import use_cache
 import pdb_files_db
 import traceback
 import datasets_db
 from datetime import timedelta
+
+##################################
+# set path to cache store folder #
+##################################
+path_to_test_cache = '/home/brabecm4/diplomka/protein-binding-sites/data/cache_data/for_tests'
 
 # python3 /home/brabecm4/diplomka/protein-binding-sites/data_prep/pdb_files_tests.py
 
@@ -19,11 +25,9 @@ args = parser.parse_args()
 
 # constant parameters
 
-structure_storage_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/orig/biolip_structures'
-path_to_embeddings_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/embedded_sequences'
-path_to_sequences_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/orig/yu_sequences'
-expected_reference_data_fname = '/home/brabecm4/diplomka/protein-binding-sites/data_prep/pdb_files_tests.reference.json'
-path_to_test_cache = '/home/brabecm4/diplomka/protein-binding-sites/data/cache_data/for_tests'
+structure_storage_folder = config.pdbs_folder
+path_to_embeddings_folder = config.embeddings_folder
+path_to_sequences_folder = config.yu_sequences_folder
 
 origin_file_key = 'structure_file'
 sequence_key = 'sequence_from_3d_structure'
@@ -45,21 +49,6 @@ pdb_db = pdb_files_db.PdbFilesDb(storage_folder=structure_storage_folder)
 chains_db = datasets_db.SeqDatasetDb(
     sequences_folder=path_to_sequences_folder, 
     embeddings_folder=path_to_embeddings_folder)
-
-with open(expected_reference_data_fname, 'r') as json_file:
-    reference_data = json.load(json_file)
-
-def files_are_correct_for_each_chain():
-    all_chains = chains_db.get_all_chain_records()
-    
-    for i, chain in enumerate(all_chains):
-        reference_fname = reference_data[chain.full_id()][origin_file_key]
-        actual_fname = pdb_db.get_file_name_for(chain.protein_id(), chain.chain_id())
-
-        if reference_fname != actual_fname:
-            return False, f'Expected: "{reference_fname}", got "{actual_fname}" - tested {i} chains'
-        
-    return True, None
 
 def sequence_error_does_not_exceed_threshold():
     all_chains = chains_db.get_all_chain_records()

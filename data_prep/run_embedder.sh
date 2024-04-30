@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <esm|t5|bert] <input_directory> <output_directory>"
+    echo "Usage: $0 [esm|t5|bert] <input_directory> <output_directory>"
     exit 1
 fi
 

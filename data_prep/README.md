@@ -64,7 +64,6 @@ with use_cache(base_class) as cached_base:
 
 We also defined the script  [`pdb_files_refresh_cache.py`](./pdb_files_refresh_cache.py) to prefill the cache.
 
-
 ## How to Use Data from Yu and PDB
 
 Apart from the implementation of the classes discussed above we have also prepared multiple handy functions that takes the information you want (like embedings, prtrusion, sasa etc.) and transform it into the vectors that are directly usebale in machine learning so that no further preprocessing on the part of neural network implementation is needed. The typical usecase can be seen in the script [`network.v2.py`](../netws/network.v2.py) where it is used or see this example:

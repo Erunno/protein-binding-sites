@@ -1,14 +1,16 @@
 import json
 import os
+import sys
 import table_printer as printer
 import argparse
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 
-# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/create_result_table.py --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs --embedder-aliases ProtT5:-T5 ProtBert:-BERT --compare --tag basic_v6 one_prot_fst_v3_c
+# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/create_result_table.py --embedder-aliases ProtT5:-T5 ProtBert:-BERT --compare --tag basic_v6 one_prot_fst_v3_c
 
 parser = argparse.ArgumentParser(description='Description of your script')
 parser.add_argument('--tag', nargs='+', help='List of tags')
 parser.add_argument('--embedder-aliases', nargs='+', help='List of embedders aliases e.g. ProtT5:-T5')
-parser.add_argument('--results-folder', help='Folder with results')
 parser.add_argument('--compare', action='store_true', help='Compare results based on tags.')
 
 args = parser.parse_args()
@@ -18,10 +20,7 @@ display_result_table = not compare_results
 embedder_aliases = [ alias.split(':-') for alias in (args.embedder_aliases if args.embedder_aliases else []) ]
 embedder_aliases = { alias[0]: alias[1] for alias in embedder_aliases }
 
-if args.results_folder:
-    results_folder = args.results_folder  
-else:
-    print("Err: no '--results-folder' option defined")
+results_folder = config.networks_results_folder  
 
 tags = []
 if args.tag:

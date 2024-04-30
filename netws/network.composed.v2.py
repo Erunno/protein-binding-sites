@@ -21,6 +21,8 @@ from seed_network import seed_all
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
 
+tag_of_the_pretrained_model = 'basic_v6'
+
 # srun -p gpu-short --gres=gpu:V100 -A nprg058s --cpus-per-task=4 --mem-per-cpu=32G python /home/brabecm4/diplomka/protein-binding-sites/netws/network.composed.v2.py --verbose True --seed 42 --learning-rate 0.01 --epochs 10 --batch-size 1000 --embedder ESM --epoch-stats-interval 10 --tag test --hidden-layers 256 256 256 32 --ligand FE --neighbors 3
 
 allowed_ligands = dataset.SeqDatasetDb.all_ligands()
@@ -78,7 +80,7 @@ X_train, _, y_train, _ = train_test_split(
     X_train_validate, y_train_validate, train_size=0.8, random_state=args.seed)
 
 with open(config.best_HPs_file) as f:
-	best_params_for_compressor = json.load(f)['basic_v6'][args.ligand]
+	best_params_for_compressor = json.load(f)[tag_of_the_pretrained_model][args.ligand]
 
 print ('defining compressor with params: ', best_params_for_compressor)
 

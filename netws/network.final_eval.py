@@ -14,8 +14,6 @@ from estimators.basic import BasicNetwork
 from estimators.bypass import BypassedInputsNetwork
 import data_prep.datasets_db as dataset
 import data_prep.pdb_files_db as pdb_data
-from evaluator import get_statistics
-import string
 from seed_network import seed_all 
 from estimators.get_compressor import get_compressor_function
 
@@ -53,6 +51,7 @@ print ('defining model and data ...', flush=True)
 
 tags_with_bypassed_input = ['protrusion_bypass_v4_c', 'SASA_bypassed_v2_c']
 
+# modify if needed: 
 accessors = { 
     'basic_v6': [
         dataset.DataAccessors.embeddings(embedder)

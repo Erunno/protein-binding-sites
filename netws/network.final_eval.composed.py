@@ -14,6 +14,8 @@ import data_prep.pdb_files_db as pdb_data
 from seed_network import seed_all 
 from estimators.get_compressor import get_compressor_function
 
+tag_of_the_pretrained_model = 'basic_v6'
+
 # srun -p gpu-short --gres=gpu:V100 -A nprg058s --cpus-per-task=4 --mem-per-cpu=32G python /home/brabecm4/diplomka/protein-binding-sites/netws/network.final_eval.composed.py --final-tag nei_3_comprs_v2_c --ligand AMP
 
 print ('running final eval run...')
@@ -23,7 +25,7 @@ embedder = 'ESM'
 
 parser = argparse.ArgumentParser(description='Ligand binding sites neural network')
 
-parser.add_argument('--final-tag', type=str, help='Tag the final result', required=True)
+parser.add_argument('--final-tag', type=str, help='This tag\'s best hyperparameters are used', required=True)
 parser.add_argument('--ligand', type=str, choices=allowed_ligands, help='Name of the ligand')
 
 args = parser.parse_args()
@@ -46,7 +48,7 @@ ds = db.get_dataset_for(args.ligand)
 print ('loading data ...', flush=True)
 
 with open(config.best_HPs_file) as f:
-    best_params_for_compressor = json.load(f)['basic_v6'][args.ligand]
+    best_params_for_compressor = json.load(f)[tag_of_the_pretrained_model][args.ligand]
 
 neighbors = {
     'nei_5_comprs_v3_cc': 5, 'nei_3_comprs_v3_cc': 3,

@@ -17,3 +17,7 @@ The goal was not to implement a single monolith application. Instead, the reposi
 ## Other Repositories
 
 This repository serves as the main codebase for the project. Additional repositories include one for storing the data used in this project ([data repository](https://github.com/Erunno/protein-binding-sites-data)) and another for archiving results from all conducted experiments ([results repository](https://github.com/Erunno/protein-binding-sites-results)).
+
+## How to Setup
+
+To set up the environment, follow the process outlined in [`manual.md`](./manual.md).

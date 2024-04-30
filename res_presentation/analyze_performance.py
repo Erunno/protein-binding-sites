@@ -3,9 +3,6 @@ import os
 import random
 import sys
 
-from matplotlib.lines import Line2D
-import table_printer as printer
-import matplotlib.patches as mpatches
 import argparse
 import results_loader 
 import numpy as np
@@ -129,13 +126,7 @@ def plot_mcc_s(data):
     plt.plot([100, 100], color=mcc_s_per_lig_color, label='MCC median per ligand')
     plt.plot([100, 100], color=all_mcc_s_color, label='MCC of a single model')
 
-    
-
     test_data_mcc_aggregate = np.median(mcc_s_test, axis=0)
-    # plt.plot(test_data_mcc_aggregate, color='red', linewidth=2, label='Median On Test Data')
-
-    # plt.plot(best_test, color='orange', linewidth=2, label='Test Data MCC')
-    # plt.plot(best_validation, color='blue', linewidth=2, label='Validation Data MCC')
 
     max = 1
     min = 0

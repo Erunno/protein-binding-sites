@@ -10,7 +10,9 @@ from contextlib import contextmanager
 
 import table_printer as printer
 import argparse
-import culour
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
+
 
 RESET = '\033[90m' # !!! not standard
 # RESET = '\033[0m'
@@ -20,8 +22,8 @@ YELLOW = '\033[93m'
 BLUE = '\033[94m'
 MAGENTA = '\033[95m'
 
-# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag basic_v6 --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/final_runs 
-# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag one_prot_fst_v3_c --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/final_runs 
+# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag basic_v6 
+# python /home/brabecm4/diplomka/protein-binding-sites/res_presentation/compare_final.py --baseline-model-tag one_prot_fst_v3_c
 
 all_ligands = ['ADP', 'AMP', 'ATP', 'CA', 'DNA', 'FE', 'GDP', 'GTP', 'HEME', 'MG', 'MN', 'ZN']
 samples = 10
@@ -71,11 +73,12 @@ tag_mappings = {
 
 parser = argparse.ArgumentParser(description='Description of your script')
 parser.add_argument('--baseline-model-tag', help='Tag of the model to compare to')
-parser.add_argument('--results-folder', help='File to save the hyperparameters')
 parser.add_argument('--full-table', type=bool, default=False, help='Print full table results.')
 args = parser.parse_args()
 
 base_tag = args.baseline_model_tag
+
+results_folder_path = config.final_networks_results_folder
 
 results = { ligand: {} for ligand in  all_ligands}
 tags = set()
@@ -182,8 +185,8 @@ def print_tags(menu_tags, highlighted_tag_index):
         print(f'{YELLOW + "-> " if i == highlighted_tag_index else ""}{tag}{RESET}')
     print()
 
-for filename in os.listdir(args.results_folder):
-    file_path = os.path.join(args.results_folder, filename)
+for filename in os.listdir(results_folder_path):
+    file_path = os.path.join(results_folder_path, filename)
     with open(file_path, 'r') as json_file:
         res = json.load(json_file)
         params = res['hyper_params']

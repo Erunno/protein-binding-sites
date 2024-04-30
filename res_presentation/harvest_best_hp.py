@@ -1,23 +1,20 @@
 import json
 import os
+import sys
 import table_printer as printer
 import argparse
-import results_loader 
+import results_loader
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config 
 
-# python3 /home/brabecm4/diplomka/protein-binding-sites/res_presentation/harvest_best_hp.py --save-to /home/brabecm4/diplomka/protein-binding-sites/data/final_eval/best_HPs.json --results-folder /home/brabecm4/diplomka/protein-binding-sites/data/netw_results/netw_runs
+# python3 /home/brabecm4/diplomka/protein-binding-sites/res_presentation/harvest_best_hp.py 
 
 parser = argparse.ArgumentParser(description='Harvest best hyperparameters')
-parser.add_argument('--results-folder', help='Folder with results')
-parser.add_argument('--save-to', help='File to save the hyperparameters')
 
 args = parser.parse_args()
 
-if args.results_folder:
-    results_folder = args.results_folder  
-else:
-    print("Err: no '--results-folder' option defined")
-
-
+results_folder = config.networks_results_folder  
+save_to_fname = config.best_HPs_file
     
 def group_everything_by_tag_ligand(results):
     grouped = {}
@@ -105,10 +102,10 @@ def print_all_tags(grouped_runs):
 #         main           # 
 ##########################
 
-runs = results_loader.load_from(args.results_folder)
+runs = results_loader.load_from(results_folder)
 grouped_runs = group_everything_by_tag_ligand(runs)
 
 best_hps = find_best_hyperparameters(grouped_runs)
-save_to_file(args.save_to, best_hps)
+save_to_file(save_to_fname, best_hps)
 
 print_all_tags(grouped_runs)

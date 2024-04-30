@@ -35,11 +35,6 @@ parser.add_argument('--seed', type=int, help='Seed of random.')
 parser.add_argument('--learning-rate', type=float, help='Learning rate')
 parser.add_argument('--radius', type=float, help='Learning rate')
 parser.add_argument('--verbose', type=bool, default=False, help='Print intermediate results.')
-# parser.add_argument('--use-simple-model', type=bool, default=False, help='Use simple sequential model.')
-# parser.add_argument('--protrusion-data-file', type=str, help='Path to protrusion data')
-# parser.add_argument('--pdb-mappings-fname', type=str, help='Path to mappings to pdb files')
-# parser.add_argument('--used-protrusion-radii', type=float, nargs='+', help='List of used radii for protrusion. (only those found in "--protrusion-data-file" can be specified)')
-
 
 args = parser.parse_args()
 print('args: ', args)
@@ -89,11 +84,11 @@ X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
         # dataset.DataAccessors.protrusion(7.0),
         # dataset.DataAccessors.protrusion(7.5),
         # dataset.DataAccessors.protrusion(8.0),
-        dataset.DataAccessors.protrusion(8.5),
+        # dataset.DataAccessors.protrusion(8.5),
         # dataset.DataAccessors.protrusion(9.0),
         # dataset.DataAccessors.protrusion(9.5),
         # dataset.DataAccessors.protrusion(10.0),
-        dataset.DataAccessors.protrusion(args.radius),
+        # dataset.DataAccessors.protrusion(args.radius),
         
         # dataset.DataAccessors.SASA_vector(),
     ],

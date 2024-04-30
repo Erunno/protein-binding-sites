@@ -4,6 +4,7 @@ import os
 import sys
 from typing import List
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+import config.config as config
 
 import numpy as np
 import datasets_db
@@ -11,9 +12,8 @@ import pdb_files_db
 import traceback
 
 # constant parameters
-path_to_protrusion_file = '/home/brabecm4/diplomka/protein-binding-sites/data/3d_proc/protrusion.max-neighbors.big.json'
-path_to_embeddings_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/embedded_sequences'
-path_to_sequences_folder = '/home/brabecm4/diplomka/protein-binding-sites/data/orig/yu_sequences'
+path_to_embeddings_folder = config.embeddings_folder
+path_to_sequences_folder = config.yu_sequences_folder
 tested_embedder = 'ESM'
 all_protrusion_radii = list(np.arange(1.0, 10.5, 0.5))
 
@@ -36,9 +36,6 @@ db = datasets_db.SeqDatasetDb(
 
 pdb_db = pdb_files_db.PdbFilesDb()
 db.set_pdb_db(pdb_db) 
-
-print(f'Loading protrusion...{RESET}')
-db.load_protrusion_data_file(path_to_protrusion_file)
 
 def can_load_all_datasets():
     all_chains = db.get_all_chain_records()
@@ -144,27 +141,6 @@ def binding_sights_are_merged_correctly_from_all_records():
     
     return True, None
 
-def there_are_some_chains_with_protrusion_records():
-    all_chains = db.get_all_chain_records()
-    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
-
-    if len(all_chains) == 0:
-        return False, 'No chains with protrusion record'
-
-    return True, None 
-
-def protrusion_radii_are_correct(): 
-    all_chains = db.get_all_chain_records()
-    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
-
-    for chain in all_chains:
-        radii = all_protrusion_radii
-
-        if radii is None or len(radii) == 0:
-            return False, f'Unexpected radii list: "{radii}"'      
-
-    return True, None
-
 def all_ligand_datasets_not_empty():
     for ligand in ALL_LIGANS:
         ds = db.get_dataset_for(ligand)
@@ -182,7 +158,6 @@ def all_ligand_datasets_not_empty():
 
 def protrusion_does_not_throw_exception(): 
     all_chains = db.get_all_chain_records()
-    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
 
     for i, chain in enumerate(all_chains):
         print(f'\r {BLUE} {protrusion_does_not_throw_exception.__name__} ... {YELLOW}{i}{BLUE} checked out of {YELLOW}{len(all_chains)}{BLUE}{RESET}', end='', flush=True)
@@ -229,7 +204,6 @@ def data_accessor_for_binding_sights_works():
 
 def data_accessor_for_protrusion_works():
     all_chains = db.get_all_chain_records()
-    all_chains = datasets_db.Helpers.filter_chains_with_protrusion(all_chains)
 
     binding_sights_accessor = datasets_db.DataAccessors.protrusion(1.0, 2.0, 4.0)
 

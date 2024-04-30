@@ -19,7 +19,6 @@ class ChainRecord:
 class ChainRecord:
     def __init__(self, csv_line: str, 
                  embedding_folder = None,
-                 protrusion_data = None,
                  pdb_db: PdbFilesDb = None):
         
         cols = ['id', 'chain', 'binding_sight_ID', 'ligand', 'binding_sights', 'sequence'] 
@@ -34,7 +33,6 @@ class ChainRecord:
 
         self.__embedding_folder = embedding_folder
         self.__embeddings_data = None
-        self.__protrusion_record = self.__load_protrusion_record(protrusion_data)
 
         self.__pdb_db = pdb_db
         self.__chain_structure = None
@@ -108,9 +106,6 @@ class ChainRecord:
         with use_cache(self.get_chain_structure()) as chain_structure:
             return np.array(chain_structure.get_protrusion_vector(radius=radius))
 
-    def has_protrusion_record(self) -> bool:
-        return self.__protrusion_record is not None
-    
     def protrusion_sequence_matches_sequence(self) -> bool:
         dist_from_3d_sequence = self.get_lev_distance_of_3d_sequence_and_sequence()
 
@@ -125,18 +120,9 @@ class ChainRecord:
                 try:
                     _3d_structure_sequence = chain_structure.compute_sequence()
                 except:
-                    print ('prot: ', self.full_id())
-
-        elif self.__protrusion_record is not None:
-            _3d_structure_sequence = self.__protrusion_record['sequence']
+                    raise Exception(f'Protein {self.full_id()} does not have a corresponding 3D structure or the sequence cannot be read from the PDB file.')
 
         return lev_distance(_3d_structure_sequence, self.sequence())
-
-    def get_3d_structure_filename(self) -> Union[str, None]:
-        if self.__protrusion_record is None:
-            return None
-        
-        return self.__protrusion_record['origin_file']
 
     def get_chain_structure(self, loaded=False) -> Chain3dStructure:
         if self.__chain_structure is None:
@@ -150,45 +136,7 @@ class ChainRecord:
     def get_SASA_vector(self):
         with use_cache(self.get_chain_structure()) as chain_structure:
             return chain_structure.get_SASA_vector()
-
-    def __load_protrusion_record(self, protrusion_data):
-        if protrusion_data is None:
-            return None
-        
-        if self.protein_id() not in protrusion_data:
-            return None
-        
-        protein_record = protrusion_data[self.protein_id()]
-        chain_records = list(filter(lambda x: x['chain'].upper() == self.chain_id(),
-                                    protein_record))
-        
-        if len(chain_records) == 0:
-            return None
-        
-        if len(chain_records) == 1:
-            return chain_records[0]
-        
-        return self.__get_best_matching_record(chain_records)
-
-    def __get_best_matching_record(self, chain_records):
-        best_rec = None
-        best_dist = sys.maxsize
-
-        for chain_rec in chain_records:
-            _3d_structure_sequence = chain_rec['sequence']
-
-            lev_dist = lev_distance(self.sequence(), _3d_structure_sequence)
-
-            if lev_dist < best_dist:
-                best_rec = chain_rec
-                best_dist = lev_dist
-
-            # prefer 'pdb' files over others
-            if lev_dist == best_dist and chain_rec['origin_file'].endswith('pdb'):
-                best_rec = chain_rec
-
-        return best_rec
-    
+  
     def __assert_binding_residues(self, binding_residues: List[str], binding_indexes: List[int]):
         for i in range(len(binding_residues)):
             binding_idx = binding_indexes[i]
@@ -211,7 +159,7 @@ class ProteinRecord:
 
 class LigandDataset:
     def __init__(self, ligand, 
-                 sequences_folder, protrusion_data, embedding_folder, pdb_db):
+                 sequences_folder, embedding_folder, pdb_db):
         self.ligand = ligand.upper()
         
         self.__training_data = []
@@ -220,7 +168,6 @@ class LigandDataset:
         self.__training_data_per_binding_sight = []
         self.__testing_data_per_binding_sight = []
         
-        self.__protrusion_data = protrusion_data
         self.__embedding_folder = embedding_folder
         self.__pdb_db = pdb_db
 
@@ -279,7 +226,6 @@ class LigandDataset:
     def __construct_chain_record(self, record_line):
         return ChainRecord(record_line,
                            embedding_folder=self.__embedding_folder,
-                           protrusion_data=self.__protrusion_data,
                            pdb_db=self.__pdb_db)
     
     def get_train_test_data(self, accessors, filters=[]):
@@ -319,7 +265,6 @@ class SeqDatasetDb:
                  embeddings_folder=config.embeddings_folder):
          
         self.__sequences_folder = sequences_folder
-        self.__protrusion_data = None
         self.__embedding_folder = embeddings_folder
         self.__pdb_db = None
 
@@ -329,12 +274,6 @@ class SeqDatasetDb:
     def set_pdb_db(self, pdb_db: PdbFilesDb):
         self.__pdb_db = pdb_db
     
-    def load_protrusion_data_file(self, file_path):
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-
-        self.__protrusion_data = data
-
     def get_all_chain_records_with_merged_binding_sites(self):
         chains: List[ChainRecord] = []  
 
@@ -382,14 +321,9 @@ class SeqDatasetDb:
         return LigandDataset(ligand,
                              sequences_folder=self.__sequences_folder,
                              embedding_folder=self.__embedding_folder,
-                             protrusion_data=self.__protrusion_data,
                              pdb_db=self.__pdb_db)
 
 class Helpers: 
-    @staticmethod
-    def filter_chains_with_protrusion(chains: List[ChainRecord]) -> List[ChainRecord]:
-        return [chain for chain in chains if chain.has_protrusion_record()]
-
     @staticmethod
     def split_chains_to_valid_and_invalid_protrusion(chains: List[ChainRecord]) -> tuple[List[ChainRecord], List[ChainRecord]]:
         valid, invalid = [], []
