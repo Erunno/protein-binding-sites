@@ -2,3 +2,4 @@ data/*
 p2rank/*
 **/__pycache__/
 python_envs/*
+**/tmp*

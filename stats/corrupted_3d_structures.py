@@ -49,9 +49,9 @@ for ligand in all_ligands:
 
     all_chains = ds.all()
 
-    test_valid, test_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_protrusion(testing)
-    train_valid, train_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_protrusion(training)
-    all_valid, all_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_protrusion(all_chains)
+    test_valid, test_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_3D_file(testing)
+    train_valid, train_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_3D_file(training)
+    all_valid, all_invalid = datasets.Helpers.split_chains_to_valid_and_invalid_3D_file(all_chains)
 
     print(f'{YELLOW}{ligand}{BLUE}')
 
@@ -64,7 +64,7 @@ for ligand in all_ligands:
 print(f'--- {YELLOW} All data {BLUE} ---\n')
 
 all_chains = db.get_all_chain_records()
-valid, invalid = datasets.Helpers.split_chains_to_valid_and_invalid_protrusion(all_chains)
+valid, invalid = datasets.Helpers.split_chains_to_valid_and_invalid_3D_file(all_chains)
 
 print_stats_of('All chains', valid, invalid)
 

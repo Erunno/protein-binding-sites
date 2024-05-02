@@ -56,7 +56,7 @@ neighbors = {
 
 X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
     [dataset.DataAccessors.neighborhood_embeddings(embedder, neighbors)],
-    filters=[dataset.Helpers.filter_chains_with_valid_protrusion]
+    filters=[dataset.Helpers.filter_chains_with_valid_3D_file]
 )
 
 def get_model(input_size):

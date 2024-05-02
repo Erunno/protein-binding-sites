@@ -48,7 +48,7 @@ ds = db.get_dataset_for(ligand)
 
 X_train, y_train, X_test, y_test = ds.get_train_test_data(
     [datasets.DataAccessors.embeddings(embedder), datasets.DataAccessors.protrusion(radius)],
-    [datasets.Helpers.filter_chains_with_valid_protrusion]
+    [datasets.Helpers.filter_chains_with_valid_3D_file]
 )
 
 X_train = torch.tensor(X_train, dtype=torch.float32)

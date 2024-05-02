@@ -177,7 +177,7 @@ def most_of_the_records_matches_protrusion_sequence():
 
     all_chains = db.get_all_chain_records()
     
-    valid, invalid = datasets_db.Helpers.split_chains_to_valid_and_invalid_protrusion(all_chains)
+    valid, invalid = datasets_db.Helpers.split_chains_to_valid_and_invalid_3D_file(all_chains)
 
     if len(valid) + len(invalid) != len(all_chains):
         return False, 'valid + invalid != all'

@@ -26,7 +26,7 @@ def load_histograms():
     db.set_pdb_db(pdb_db)    
 
     all_chains = db.get_all_chain_records_with_merged_binding_sites()
-    all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
+    all_chains = datasets.Helpers.filter_chains_with_valid_3D_file(all_chains)
 
     # all_radii = list(np.arange(1.0, 10.5, 0.5))
     all_radii = [4.0, 6.0, 8.0, 10.0]

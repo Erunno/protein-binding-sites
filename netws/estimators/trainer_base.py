@@ -1,13 +1,11 @@
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.metrics import matthews_corrcoef
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.validation import check_X_y, check_array
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.init as init
 from sklearn.preprocessing import StandardScaler
-from focal_loss import FocalLoss
 
 loading_bar_width = 25
 UP_char = "\033[A"

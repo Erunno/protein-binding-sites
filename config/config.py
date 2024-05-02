@@ -1,4 +1,3 @@
-import os
 
 data_top_folder = '/home/brabecm4/diplomka/protein-binding-sites/data'
 

@@ -325,7 +325,7 @@ class SeqDatasetDb:
 
 class Helpers: 
     @staticmethod
-    def split_chains_to_valid_and_invalid_protrusion(chains: List[ChainRecord]) -> tuple[List[ChainRecord], List[ChainRecord]]:
+    def split_chains_to_valid_and_invalid_3D_file(chains: List[ChainRecord]) -> tuple[List[ChainRecord], List[ChainRecord]]:
         valid, invalid = [], []
 
         for chain in chains:
@@ -338,8 +338,8 @@ class Helpers:
         return valid, invalid
 
     @staticmethod
-    def filter_chains_with_valid_protrusion(chains: List[ChainRecord]) -> List[ChainRecord]:
-        valid, _ = Helpers.split_chains_to_valid_and_invalid_protrusion(chains)
+    def filter_chains_with_valid_3D_file(chains: List[ChainRecord]) -> List[ChainRecord]:
+        valid, _ = Helpers.split_chains_to_valid_and_invalid_3D_file(chains)
         return valid
 
     @staticmethod

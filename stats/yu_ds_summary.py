@@ -21,8 +21,8 @@ def get_stats_for(ligand):
     ds = db.get_dataset_for(ligand)
 
     train, test = ds.training(), ds.testing()
-    train = datasets.Helpers.filter_chains_with_valid_protrusion(train)
-    test = datasets.Helpers.filter_chains_with_valid_protrusion(test)
+    train = datasets.Helpers.filter_chains_with_valid_3D_file(train)
+    test = datasets.Helpers.filter_chains_with_valid_3D_file(test)
 
     train_chain_count = len(train)
     test_chain_count = len(test)

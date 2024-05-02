@@ -93,9 +93,9 @@ X_train, y_train, X_test, y_test = ds.get_train_test_data(
         dataset.DataAccessors.SASA_vector(),
     ],
 
-    # also we need to filter chains that has valid protrusion values 
-    # i.e. the PDB file defines the same sequence as the Yu dataset record
-    filters=[dataset.Helpers.filter_chains_with_valid_protrusion]
+    # also we need to filter chains that has valid 3D file
+    # i.e. the PDB file defines the same amino acids sequence as the Yu dataset record
+    filters=[dataset.Helpers.filter_chains_with_valid_3D_file]
 )
 
 # `X_train`, `X_test` are matrices containing the desired feature vectors 

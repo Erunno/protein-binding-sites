@@ -23,7 +23,7 @@ def load_histogram():
     db.set_pdb_db(pdb_db)    
 
     all_chains = db.get_all_chain_records_with_merged_binding_sites()
-    all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
+    all_chains = datasets.Helpers.filter_chains_with_valid_3D_file(all_chains)
 
     binding_sights = datasets.Helpers.concat_chain_data(
         datasets.DataAccessors.biding_sights_vect(),

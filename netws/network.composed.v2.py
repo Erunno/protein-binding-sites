@@ -73,7 +73,7 @@ X_train_validate, y_train_validate, _, _ = ds.get_train_test_data(
     [
         dataset.DataAccessors.embeddings(args.embedder),
     ],
-    filters=[dataset.Helpers.filter_chains_with_valid_protrusion]
+    filters=[dataset.Helpers.filter_chains_with_valid_3D_file]
 )
 
 X_train, _, y_train, _ = train_test_split(
@@ -98,7 +98,7 @@ X_train_validate, y_train_validate, X_test, y_test = ds.get_train_test_data(
             args.embedder, compressor, args.neighbors),
     ],
 
-     filters=[dataset.Helpers.filter_chains_with_valid_protrusion]
+     filters=[dataset.Helpers.filter_chains_with_valid_3D_file]
 )
 
 X_train, X_validate, y_train, y_validate = train_test_split(

@@ -32,7 +32,7 @@ def load_histograms():
 
     for ligand in all_ligands:
         all_chains = db.get_dataset_for(ligand).all()
-        all_chains = datasets.Helpers.filter_chains_with_valid_protrusion(all_chains)
+        all_chains = datasets.Helpers.filter_chains_with_valid_3D_file(all_chains)
 
         binding_sights = datasets.Helpers.concat_chain_data(
             datasets.DataAccessors.biding_sights_vect(),

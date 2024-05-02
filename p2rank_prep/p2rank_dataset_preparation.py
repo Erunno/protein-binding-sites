@@ -30,8 +30,8 @@ def run_for_ligand(ligand):
     ds = db.get_dataset_for(ligand)
     test, train = ds.testing(), ds.training()
 
-    test  = datasets.Helpers.filter_chains_with_valid_protrusion(test)
-    train = datasets.Helpers.filter_chains_with_valid_protrusion(train)
+    test  = datasets.Helpers.filter_chains_with_valid_3D_file(test)
+    train = datasets.Helpers.filter_chains_with_valid_3D_file(train)
 
     output_str = ""
 

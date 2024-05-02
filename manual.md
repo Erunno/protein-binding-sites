@@ -41,6 +41,8 @@ In the [data repository](https://github.com/Erunno/protein-binding-sites-data), 
 1. Run the script [`data_prep/run_embedder.sh`](./data_prep/run_embedder.sh) with the command: `sh data_prep/run_embedder.sh [esm|t5|bert] <directory containing fasta file(s)> <target directory of embeddings>`. This calls an API that runs the selected embedder automatically. All you need to do then is to unzip the obtained files and move them to one folder named after the embedder you selected.
 2. Download and set up the embedder of your liking. The expected folder structure is `<folder with all your embeddings>/<your embedder name>/<Protein ID with a chain ID>.npy` (see example below). These files in the embedder folder should be numpy vectors.
 
+*Note: The API is currently by a third party, and as of May 2. 2024, it is not functional. If this issue persists, please contact me at `matyas.brabec@seznam.cz` so that we can arrange the transfer of my embeddings (obtained by ESM). Their size is approximately 20GB, so I am unsure of the best method for making them available otherwise. Alternatively, I have set up a small subset of embeddings only for the ligand `GTP` in [this repository](https://github.com/Erunno/protein-binding-sites-esm-embeddings).*
+
 ### Loaded Data Checkpoint
 
 At this point, you have all the data needed for our project. Your file system should look something like this:
